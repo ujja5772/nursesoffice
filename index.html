@@ -258,6 +258,8 @@ input,select,textarea{font-family:"Nunito",sans-serif;font-size:20px;font-weight
 .copy-guide{background:#FFF8E1;border:2px dashed var(--sun);border-radius:12px;padding:8px 12px;font-family:"Jua";font-size:20px;margin:6px 0}
 .copy-guide b{font-family:"Nunito",sans-serif;font-weight:900}
 .rlabel{font-size:18px;margin:10px 0 0}
+.spellbox{background:#FFF2F3;border:2px solid #f3b9be;border-radius:12px;padding:8px 12px;margin:6px 0;font-size:17px;line-height:1.5}
+.spellbox b{font-family:"Nunito",sans-serif;font-weight:900;color:var(--red)}
 .myreps{grid-column:1 / -1}
 .myrep{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;border-top:1px dashed var(--line);padding:8px 0}
 .myrep .pic{width:52px;height:52px;font-size:40px}
@@ -504,7 +506,6 @@ function demoRpc(fn, a) {
   const pinOk = p => DB.students[sk(a.p_class, a.p_no)] != null && DB.students[sk(a.p_class, a.p_no)].pin === (p || '');
   switch (fn) {
     case 'hn_get_numbers': return DB.numbers[a.p_class] || null;
-    case 'hn_check_pin': return pinOk(a.p_pin);
     case 'hn_student_login': { const st = DB.students[sk(a.p_class, a.p_no)]; if (!st) return 'new'; if (st.pin === (a.p_pin || '')) { st.last = new Date().toISOString(); return 'ok'; } return 'wrong'; }
     case 'hn_student_register': { if (DB.students[sk(a.p_class, a.p_no)]) return 'exists'; if ((a.p_pin || '').length < 4) return 'bad'; DB.students[sk(a.p_class, a.p_no)] = { pin: a.p_pin, last: new Date().toISOString() }; return 'ok'; }
     case 'hn_teacher_students': {
@@ -567,7 +568,7 @@ function demoRpc(fn, a) {
       if (!p) {
         const cnt = id => DB.replies.filter(r => r.card_id === id).length;
         const pool = shuffle(c.filter(x => x.class_no === a.p_class && x.student_no !== a.p_no && !x.hidden
-          && !DB.replies.some(r => r.card_id === x.id && r.reply_no === a.p_no) && cnt(x.id) < 5)).sort((x, y) => cnt(x.id) - cnt(y.id));
+          && !DB.replies.some(r => r.card_id === x.id && r.reply_no === a.p_no))).sort((x, y) => cnt(x.id) - cnt(y.id));
         if (!pool.length) return null;
         p = { id: DB.seq++, card_id: pool[0].id, class_no: a.p_class, reply_no: a.p_no, lines: null };
         DB.replies.push(p);
@@ -586,9 +587,8 @@ function demoRpc(fn, a) {
     case 'hn_has_pw': case 'hn_teacher_login': case 'hn_setup_pw': case 'hn_change_pw': return true;
     case 'hn_teacher_data': return { cards: c.filter(x => x.class_no === a.p_class).sort((x, y) => x.student_no - y.student_no)
         .map(x => ({ ...x, replies: DB.replies.filter(r => r.card_id === x.id && r.lines).map(r => ({ id: r.id, reply_no: r.reply_no, lines: r.lines, best: !!r.best })) })),
-      replies_total: DB.replies.filter(r => r.lines && r.class_no === a.p_class).length, scores: [], numbers: DB.numbers[a.p_class] || '', student_pin: DB.pin };
+      replies_total: DB.replies.filter(r => r.lines && r.class_no === a.p_class).length, scores: [], numbers: DB.numbers[a.p_class] || '' };
     case 'hn_set_numbers': DB.numbers[a.p_class] = a.p_numbers; return true;
-    case 'hn_set_student_pin': DB.pin = (a.p_pin || '').trim() || null; return true;
     case 'hn_teacher_action': {
       const i = c.findIndex(x => x.id === a.p_card); if (i < 0) return false; const r = c[i];
       ({ hide: () => r.hidden = true, unhide: () => r.hidden = false, feature: () => r.featured = true, unfeature: () => r.featured = false,
@@ -789,7 +789,7 @@ function uiModal(html, onOk, okLabel = '네<span class="en">Yes</span>') {
   d.querySelector('[data-ok]').focus();
 }
 function uiConfirm(msg, onYes) { const [k, e] = msg.split('\n'); uiModal(`<p style="font-size:24px;font-family:Jua;margin:0">${esc(k)}</p>${e ? `<p class="eni" style="font-size:18px">${esc(e)}</p>` : ''}`, onYes); }
-function stopTimer() { clearInterval(TMR); TMR = null; }
+function stopTimer() { clearInterval(TMR); clearTimeout(TMR); TMR = null; }
 function serverError(e) {
   console.error(e);
   toast('서버에 연결하지 못했어요. 선생님께 알려 주세요.\nCan\'t reach the server. Please tell your teacher.', 3000);
@@ -985,6 +985,7 @@ const LEVELS = [[0, '견습 보건 선생님', 'Trainee Nurse', '🩹'], [3, '�
 let ROOM = 'patient';
 async function writeHub(room) {
   if (room) ROOM = room;
+  loadWords();
   let r = null;
   try { r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }); } catch (e) { serverError(e); }
   const mine = r && r.card, replies = (r && r.replies) || [], stamps = (r && r.stamps) || [];
@@ -1049,6 +1050,89 @@ async function writeHub(room) {
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2><span class="muted">${ME.cls}반 ${ME.no}번 · Class ${ME.cls} No. ${ME.no}</span></div>
     ${tabs}${body}</div>`;
 }
+
+/* ---- 철자·문법 검사 (사전 words.txt + 자주 틀리는 표현) ---- */
+let DICT = null, DICT_P = null;
+function loadWords() {
+  if (DICT || DICT_P) return DICT_P || Promise.resolve();
+  DICT_P = fetch('words.txt').then(r => r.ok ? r.text() : '').then(t => { if (t) DICT = new Set(t.split('\n')); }).catch(() => {});
+  return DICT_P;
+}
+const GRAMMAR = [
+  [/\blied down\b/i, 'lay down / lie down', "'lied'는 '거짓말했다'예요. 누웠다는 lay down, 누워는 lie down이에요."],
+  [/\beated\b/i, 'ate', "eat의 과거형은 ate예요."], [/\bgoed\b/i, 'went', "go의 과거형은 went예요."],
+  [/\brunned\b/i, 'ran', "run의 과거형은 ran이에요."], [/\bdrinked\b/i, 'drank', "drink의 과거형은 drank예요."],
+  [/\bsleeped\b/i, 'slept', "sleep의 과거형은 slept예요."], [/\bcatched\b/i, 'caught', "catch의 과거형은 caught예요."],
+  [/\bcomed\b/i, 'came', "come의 과거형은 came이에요."], [/\bhaved\b/i, 'had', "have의 과거형은 had예요."],
+  [/\bmaked\b/i, 'made', "make의 과거형은 made예요."], [/\bbuyed\b/i, 'bought', "buy의 과거형은 bought예요."],
+  [/\bswimmed\b/i, 'swam', "swim의 과거형은 swam이에요."], [/\bfalled\b/i, 'fell', "fall의 과거형은 fell이에요."],
+  [/\bfeeled\b/i, 'felt', "feel의 과거형은 felt예요."], [/\bhurted\b/i, 'hurt', "hurt의 과거형은 hurt 그대로예요."],
+  [/\bthinked\b/i, 'thought', "think의 과거형은 thought예요."], [/\bwrited\b/i, 'wrote', "write의 과거형은 wrote예요."],
+  [/\bplayed games all nights\b/i, 'all night', "all night이 맞아요."],
+  [/\bI has\b/, 'I have', "I 다음에는 have를 써요."], [/\bI is\b/, 'I am / I\'m', "I 다음에는 am을 써요."],
+  [/\b(he|she) have\b/i, 'has', "he, she 다음에는 has를 써요."],
+  [/\ba (apple|egg|orange|ice cream|earache)\b/i, 'an', "모음(a, e, i, o, u) 소리로 시작하는 말 앞에는 an을 써요."],
+  [/\ban (cold|fever|headache|runny nose|stomachache|toothache)\b/i, 'a', "이 말 앞에는 a를 써요."],
+  [/\bI have (cold|fever|headache|runny nose|stomachache|toothache)\b/i, 'I have a ___', "아픈 곳 앞에 a를 넣어요. (I have a cold.)"],
+  [/\btoo much (candies|cookies|chips|apples)\b/i, 'too many', "셀 수 있는 것(-s)에는 too many를 써요."],
+  [/\bdon't eats\b/i, "don't eat", "don't 다음에는 eat을 그대로 써요."],
+  [/\bget some sleeps\b/i, 'get some sleep', "sleep에는 s를 붙이지 않아요."]
+];
+function editDist(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1] ? d[i - 2][j - 2] + 1 : 99);
+  return d[a.length][b.length];
+}
+// 수업에서 자주 쓰는 단어를 먼저 추천해요
+let COMMON = null;
+function commonWords() {
+  if (COMMON) return COMMON;
+  const txt = [...BANK_PATIENT, ...BANK_NURSE].flatMap(g => g[1].map(x => x[0])).join(' ') + ' ' +
+    SP_CAUSE.join(' ') + ' ' + Object.values(ADV).map(a => a.en).join(' ') + ' ' + SYM_KEYS.map(k => SYM[k].en).join(' ') +
+    ' pizza chicken hamburger candy candies chocolate cookie cookies cake milk juice soda water ice cream snow rain cold hot warm ' +
+    'school home bed sleep sleepy tired thirsty hungry sick hurt hurts head stomach tooth toothache nose throat leg arm eye ear ' +
+    'played ate drank ran went fell slept watched studied stayed walked swam rode cried sneezed coughed ' +
+    'mom dad friend friends teacher nurse doctor hospital medicine vitamins rest please thank you very much too all day night late early yesterday today';
+  COMMON = new Set(txt.toLowerCase().match(/[a-z']+/g));
+  return COMMON;
+}
+function suggest(w) {
+  if (!DICT) return [];
+  const C = commonWords(), out = [];
+  for (const x of DICT) { if (Math.abs(x.length - w.length) > 2) continue; const k = editDist(w, x); if (k <= 2) out.push([k - (C.has(x) ? 1.5 : 0), x]); }
+  return out.sort((a, b) => a[0] - b[0] || Math.abs(a[1].length - w.length) - Math.abs(b[1].length - w.length)).slice(0, 3).map(x => x[1]);
+}
+function wordOK(raw, first) {
+  if (!DICT) return true;
+  if (!first && /^[A-Z]/.test(raw)) return true;         // 이름 같은 고유명사는 통과
+  let w = raw.toLowerCase().replace(/’/g, "'");
+  if (DICT.has(w)) return true;
+  w = w.replace(/'(s|m|re|ll|ve|d)$/, '').replace(/n't$/, '');
+  return DICT.has(w) || w === 'i';
+}
+// texts 안의 철자/문법 문제를 찾아요 → [{msg, html}]
+function englishIssues(texts) {
+  const issues = [];
+  texts.filter(Boolean).forEach(t => {
+    const flagged = new Set();
+    GRAMMAR.forEach(([re, fix, ko]) => { const m = t.match(re); if (m) { issues.push(`📝 <b>${esc(m[0])}</b> → <b>${esc(fix)}</b> · ${esc(ko)}`); m[0].toLowerCase().split(/\s+/).forEach(x => flagged.add(x)); } });
+    (t.match(/[A-Za-z’']+/g) || []).forEach((w, i) => {
+      if (!flagged.has(w.toLowerCase()) && !wordOK(w, i === 0)) { const sg = suggest(w.toLowerCase()); issues.push(`🔤 <b>${esc(w)}</b>: 사전에 없는 단어예요${sg.length ? ` → 혹시 <b>${sg.map(esc).join(', ')}</b>?` : '. 철자를 확인해요.'}`); }
+    });
+  });
+  return [...new Set(issues)];
+}
+function showIssues(boxId, issues) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  box.hidden = !issues.length;
+  box.innerHTML = issues.length ? `<div class="ko" style="font-size:19px;margin-bottom:4px">🔍 고쳐 볼까요? <span class="eni">Let's check!</span></div>${issues.map(x => `<div>${x}</div>`).join('')}` : '';
+}
+
 /* ---- 자동 저장 (이 컴퓨터에 학생별로) ---- */
 const dkey = kind => `hn_draft_${kind}_${ME.cls}_${ME.no}`;
 function draftSave(kind, data) { try { localStorage.setItem(dkey(kind), JSON.stringify({ t: Date.now(), data })); } catch (e) {} }
@@ -1058,11 +1142,12 @@ const wSave = () => { if (W) draftSave('form', { ...W }); };
 const nrSave = () => { if (NR) draftSave('reply', { id: NR.card.id, sel: [...NR.sel], step: NR.step, lines: NR.lines }); };
 
 /* ---- 글 고치기 창 (학생·교사 공용) ---- */
-function lineEditor(title, guest, lines, onSave) {
+function lineEditor(title, guest, lines, onSave, check = true) {
   const d = document.createElement('div'); d.className = 'banner';
   d.innerHTML = `<div class="card editor"><h2>${title}</h2>
     ${guest !== null ? `<label class="ed-row"><span class="ko">손님 이름 <span class="eni">Name</span></span><input id="edG" maxlength="15" value="${esc(guest)}" autocomplete="off" spellcheck="false"></label>` : ''}
     ${lines.map((l, i) => `<label class="ed-row"><span class="ko">문장 ${i + 1}</span><input class="edL" maxlength="80" value="${esc(l)}" autocomplete="off" spellcheck="false"></label>`).join('')}
+    <div id="spellE" class="spellbox" hidden></div>
     <p class="muted" style="font-size:15px;margin:6px 0 0">틀린 단어나 문장을 고쳐요. 빈칸으로 두면 그 문장은 빠져요.<span class="en">Fix words or sentences. Empty lines are removed.</span></p>
     <div class="row" style="justify-content:center;margin-top:12px"><button class="ghost" data-x>취소<span class="en">Cancel</span></button><button class="red" data-ok>저장<span class="en">Save</span></button></div></div>`;
   document.body.appendChild(d);
@@ -1073,6 +1158,7 @@ function lineEditor(title, guest, lines, onSave) {
     if (guest !== null && !/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(g)) return toast('손님 이름은 영어로 써요\nWrite the name in English.');
     if (!ls.length) return toast('문장이 하나는 있어야 해요\nKeep at least one sentence.');
     if (ls.some(l => !/^[A-Za-z0-9 ,.'!?-]+$/.test(l))) return toast('영어로만 써요\nEnglish only, please.');
+    if (check) { await loadWords(); const iss = englishIssues(ls); showIssues('spellE', iss); if (iss.length) return toast('🔍 고칠 곳이 있어요\nPlease fix the words.'); }
     if (await onSave(g, ls.map(tidy)) !== false) d.remove();
   };
 }
@@ -1176,6 +1262,7 @@ function guestDraw() {
       <h3 class="ko" style="font-size:22px">더 하고 싶은 말 (선택, 2개까지)<span class="en">More to say (Optional, up to 2)</span></h3>
       <p class="muted" style="margin:0 0 6px">아래 문장 창고에서 찾아보고 직접 써요. 단어를 바꿔 써도 좋아요! (pizza → chicken)<span class="en">Find a sentence below and type it. You can change words!</span></p>
       ${[0, 1].map(i => `<div class="wline"><span class="ok" id="ok_x${i}">💬</span><input id="in_x${i}" maxlength="60" value="${esc(W.extras[i] || '')}" placeholder="${i ? 'Can I lie down?' : 'I ate too much pizza.'}" onfocus="BANK_TARGET=this.id" oninput="xCheck(${i})" autocomplete="off" spellcheck="false"></div>`).join('')}
+      <div id="spellP" class="spellbox" hidden></div>
       <div id="copyGuide" class="copy-guide" hidden></div>
       ${bankHTML('bankP', BANK_PATIENT)}`;
   } else {
@@ -1214,7 +1301,7 @@ function saveStepInputs() {
   if (W.step === 2) { [0, 1].forEach(i => { const x = document.getElementById('in_x' + i); if (x) W.extras[i] = x.value.trim(); }); guestTargets().forEach(t => { const e = document.getElementById('in_' + t.id); if (e) W.typed[t.id] = e.value; }); }
 }
 function guestBack() { saveStepInputs(); W.step--; guestDraw(); }
-function guestNext() {
+async function guestNext() {
   saveStepInputs();
   if (W.step === 0) {
     if (!W.avatar) return toast('손님 그림을 골라 주세요\nChoose a picture.');
@@ -1226,6 +1313,12 @@ function guestNext() {
     const bad = guestTargets().filter(t => !t.want.includes(norm(W.typed[t.id])));
     if (bad.length) { toast('✏️ 표시된 문장을 다시 확인해요\nCheck the ✏️ sentences.'); bad.forEach(t => shakeEl('#in_' + t.id)); return; }
     if (W.extras.some(x => x && !engOK(x))) return toast('더 하고 싶은 말은 영어 문장으로 써요\nWrite an English sentence, please.');
+    if (W.extras.some(Boolean)) {
+      await loadWords();
+      const iss = englishIssues(W.extras);
+      showIssues('spellP', iss);
+      if (iss.length) { toast('🔍 고칠 곳이 있어요\nPlease fix the words.'); return; }
+    }
   }
   W.step++; guestDraw();
 }
@@ -1251,12 +1344,14 @@ async function guestSend() {
 /* ---- ② nurse reply ---- */
 let NR = null;
 async function nurseStart() {
+  stopTimer();
   let c = null;
   try { c = await rpc('hn_get_delivery', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_name: ME.name }); } catch (e) { return serverError(e); }
   if (!c) {
     $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="writeHub('nurse')">← 돌아가기 <span class="eni">Back</span></button><h2>② 나는 보건 선생님<span class="en">I'm a nurse</span></h2></div>
       <div class="panel center" style="padding:50px"><p class="ko" style="font-size:30px">📭 아직 배달할 문진표가 없어요.<span class="en">No patient forms yet.</span></p>
-      <p>친구들이 문진표를 보내면 다시 눌러 보세요.<span class="en">Try again after your friends send forms.</span></p><button onclick="nurseStart()">다시 받기<span class="en">Try again</span></button></div></div>`;
+      <p>친구들이 문진표를 보내면 자동으로 다시 찾아요. (10초마다)<span class="en">We'll check again every 10 seconds.</span></p><button onclick="nurseStart()">🔄 지금 다시 받기<span class="en">Try now</span></button></div></div>`;
+    stopTimer(); TMR = setTimeout(() => { if (document.body.innerText.includes('아직 배달할')) nurseStart(); }, 10000);
     return;
   }
   NR = { card: c, step: 'meds', sel: new Set(), lines: null, msg: '' };
@@ -1290,6 +1385,7 @@ function nurseDraw() {
           ${row(1, '② 약을 줘요', 'Give medicine', 'Take ____ ________.', 1)}
           ${row(2, '③ 조언해요 (꼭)', 'Advice (must)', 'Get some rest.', 1)}
           ${row(3, '④ 더 해 줄 말 (선택)', 'More (optional)', tips[0] ? tips[0][0] : 'Get well soon.', 0)}
+          <div id="spellN" class="spellbox" hidden></div>
           <div id="copyGuide" class="copy-guide" hidden></div>
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted" style="font-size:14px">💾 쓰는 글은 자동 저장돼요 · Auto-saved</span><button class="red" onclick="nrSend()" ${w ? '' : 'disabled'}>📨 답장 보내기<span class="en">Send reply</span></button></div>
         </div>
@@ -1314,6 +1410,10 @@ function nrCheck() {
 }
 async function nrSend() {
   if (!nrCheck()) { toast('✏️ 표시된 문장을 다시 확인해요\nCheck the ✏️ sentences.'); return; }
+  await loadWords();
+  const iss = englishIssues([NR.lines[2], NR.lines[3]]);
+  showIssues('spellN', iss);
+  if (iss.length) { toast('🔍 고칠 곳이 있어요\nPlease fix the words.'); return; }
   try {
     const r = await rpc('hn_submit_reply', { p_pin: ME.pin, p_card: NR.card.id, p_class: ME.cls, p_no: ME.no, p_name: ME.name,
       p_meds: [...NR.sel], p_advice: 'free', p_lines: NR.lines.filter(x => x.trim()).map(tidy) });
@@ -1418,7 +1518,7 @@ function tEditCard(id) {
     const ok = await rpc('hn_teacher_edit_card', { p_pw: TPW, p_card: id, p_guest: G, p_lines: [`Hello, I'm ${G}.`, ...ls] });
     if (!ok) { toast('다시 해 주세요\nPlease try again.'); return false; }
     toast('고쳤어요\nSaved.'); teacherMain();
-  });
+  }, false);
 }
 function tEditReply(id) {
   const r = tFindReply(id); if (!r) return;
@@ -1426,7 +1526,7 @@ function tEditReply(id) {
     const ok = await rpc('hn_teacher_edit_reply', { p_pw: TPW, p_reply: id, p_lines: ls });
     if (!ok) { toast('다시 해 주세요\nPlease try again.'); return false; }
     toast('고쳤어요\nSaved.'); teacherMain();
-  });
+  }, false);
 }
 
 /* ---- 성적표 문구 (학생 쓰기 내용을 바탕으로 자동 작성, ~함/~임/~됨) ---- */
@@ -1526,10 +1626,6 @@ async function tClearScores() { try { await rpc('hn_clear_scores', { p_pw: TPW, 
 async function tSaveNums() {
   const v = document.getElementById('nums').value.trim();
   try { await rpc('hn_set_numbers', { p_pw: TPW, p_class: TCLS, p_numbers: v }); toast(`저장했어요 (${parseNumbers(v).length}명)\nSaved (${parseNumbers(v).length} students)`); teacherMain(); } catch (e) { serverError(e); }
-}
-async function tSavePin() {
-  const v = document.getElementById('spin').value.trim();
-  try { await rpc('hn_set_student_pin', { p_pw: TPW, p_pin: v }); toast(v ? '핀 번호를 저장했어요\nPIN saved.' : '핀 번호를 없앴어요\nPIN removed.'); teacherMain(); } catch (e) { serverError(e); }
 }
 async function tChangePw() {
   const n = document.getElementById('npw').value;
