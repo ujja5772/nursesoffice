@@ -1,0 +1,2008 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nurse's Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mint:#E3F3EF; --mint2:#C9E9E1; --teal:#2B8C80; --ink:#1E4844; --red:#E5505C;
+  --sun:#FFC94A; --paper:#FFFFFF; --line:#9CCFC4; --soft:#F6FBFA; --blue:#3E7FD6;
+  --ok:#2EA868; --warn:#F28C28;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--mint);color:var(--ink);font-family:"Nunito","Jua",sans-serif;font-weight:700;font-size:18px;
+  background-image:linear-gradient(var(--mint2) 1px,transparent 1px),linear-gradient(90deg,var(--mint2) 1px,transparent 1px);
+  background-size:44px 44px}
+h1,h2,h3,.ko{font-family:"Jua",sans-serif;font-weight:400}
+button{font-family:"Jua",sans-serif;font-size:20px;border:0;border-radius:14px;padding:12px 20px;cursor:pointer;
+  background:var(--teal);color:#fff;box-shadow:0 4px 0 #1d6a61;transition:transform .08s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #1d6a61}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+button.ghost{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line)}
+button.red{background:var(--red);box-shadow:0 4px 0 #b13a44}
+button.sun{background:var(--sun);color:var(--ink);box-shadow:0 4px 0 #d9a52e}
+button.small{font-size:16px;padding:7px 12px;border-radius:10px}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{font-family:"Nunito",sans-serif;font-size:20px;font-weight:700;padding:10px 12px;border:2px solid var(--line);
+  border-radius:12px;background:#fff;color:var(--ink)}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 20px 40px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.top h2{margin:0;font-size:30px;flex:1}
+.panel{background:var(--paper);border-radius:20px;padding:20px;border:2px solid var(--line)}
+.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.muted{color:#5d807b;font-weight:600}
+.center{text-align:center}
+#demoBadge{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--sun);color:var(--ink);font-family:"Jua";font-size:16px;padding:8px 14px;border-radius:14px;z-index:60;box-shadow:0 3px 0 #d9a52e;text-align:center}
+#demoBadge .en{font-size:13px}
+#toast{white-space:pre-line;text-align:center;position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;
+  font-family:"Jua";font-size:22px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99}
+#toast.on{opacity:1}
+.en{display:block;font-family:"Nunito",sans-serif;font-weight:700;font-size:max(.7em,16px);opacity:.78;line-height:1.25;margin-top:2px;letter-spacing:0}
+.eni{font-family:"Nunito",sans-serif;font-weight:700;font-size:max(.85em,16px);opacity:.8}
+.cross{display:inline-grid;place-items:center;width:1.1em;height:1.1em;background:var(--red);color:#fff;border-radius:.25em;font-size:.9em;line-height:1}
+
+/* picture with emoji fallback */
+.pic{display:inline-grid;place-items:center;position:relative}
+.pic{overflow:hidden}
+.pic img{width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
+.pic i{display:none;font-style:normal;line-height:1}
+.pic.noimg img{display:none}
+.pic.noimg i{display:grid;place-items:center;width:100%;height:100%}
+.pic.med.noimg i{background:var(--c);border-radius:22% 22% 30% 30%;border:3px solid rgba(0,0,0,.12);font-size:.5em}
+
+/* ===== home ===== */
+.home{display:grid;grid-template-columns:1.05fr 1fr;gap:28px;align-items:center;min-height:calc(100vh - 60px)}
+.sign{background:linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url(img/bg_nurse_office.png) center/cover;border:4px solid var(--teal);border-radius:24px;padding:28px 30px;position:relative}
+.sign h1{font-size:64px;margin:0;line-height:1.05}
+.sign h1 .cross{font-size:54px;margin-right:10px;vertical-align:6px}
+.sign p{font-size:22px;margin:14px 0 0}
+.sign .door{margin-top:22px;display:flex;align-items:end;gap:10px}
+.sign .door .pic{width:150px;height:150px;font-size:110px}
+.menu{display:grid;gap:14px}
+.menu button{text-align:left;font-size:26px;padding:18px 22px;display:flex;align-items:center;gap:16px;border-radius:18px}
+.menu button small{display:block;font-family:"Nunito";font-size:16px;font-weight:700;opacity:.85;margin-top:2px}
+.menu .em{font-size:38px}
+.teacher-btn{font-size:15px;opacity:.85}
+.credit{text-align:center;margin-top:14px;color:#5d807b;font-size:15px}
+
+/* ===== practice ===== */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs button{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line)}
+.tabs button.on{background:var(--ink);color:#fff;box-shadow:0 4px 0 #0f2a27}
+.words{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.wcard{min-width:0}
+.wcard b{max-width:100%;line-height:1.1}
+.wrap.bigscreen{max-width:1760px}
+.wcard{background:#fff;border:3px solid var(--line);border-radius:18px;padding:12px;text-align:center;cursor:pointer;min-height:220px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.wcard .pic{width:120px;height:120px;font-size:84px}
+.wcard b{font-size:30px}
+.wcard .ko{font-size:22px;color:var(--teal);visibility:hidden}
+.wcard.show .ko{visibility:visible}
+.match{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start}
+.mcol{display:grid;gap:12px}
+.mitem{background:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:24px}
+.mitem .pic{width:64px;height:64px;font-size:46px}
+.mitem.lit{border-color:var(--red);background:#FFF2F3;transform:scale(1.03)}
+.advlist{display:grid;gap:8px;margin-top:8px}
+.advlist button{display:flex;justify-content:space-between;gap:12px;font-family:"Nunito",sans-serif;font-weight:900;font-size:22px;text-align:left;padding:10px 14px}
+.advlist button .ko{font-family:"Jua";font-weight:400;color:var(--teal);font-size:20px}
+/* 전자칠판 화면: 뒷자리에서도 보이게 크게 */
+.bigscreen .en{font-size:max(.72em,19px)}
+.bigscreen .eni{font-size:max(.85em,19px)}
+.bigscreen .top h2{font-size:38px}
+.bigscreen .tabs button{font-size:22px}
+.bigscreen .wcard{min-height:250px}
+.bigscreen .wcard b{font-size:clamp(22px,2.2vw,44px)}
+.bigscreen .wcard .ko{font-size:30px}
+.bigscreen .wcard .pic{width:clamp(110px,15vh,170px);height:clamp(110px,15vh,170px)}
+.bigscreen .wcard{min-height:clamp(220px,33vh,360px)}
+.bigscreen .dlg .who{min-width:130px}
+.bigscreen .sw-row button{font-size:clamp(16px,2.4vh,22px)}
+.bigscreen .dlg{font-size:clamp(28px,4.8vh,50px)}
+.bigscreen .dlg .who{font-size:.7em;min-width:4.2em}
+.bigscreen .swapper .sw-h{font-size:24px}
+.bigscreen .dlg p{line-height:1.45}
+.bigscreen .swapper .sw-l{font-size:clamp(20px,3vh,26px)}
+.bigscreen .mitem{font-size:28px}
+.bigscreen .mitem .pic{width:76px;height:76px}
+.bigscreen .rule{font-size:24px}
+.bigscreen .big{font-size:56px}
+.bigscreen .quiz .big[style]{font-size:40px!important}
+.bigscreen .sp-team{font-size:46px}
+.bigscreen .sp-bubble{font-size:clamp(30px,5vh,58px)}
+.bigscreen .sp-bubble .nm{font-size:26px}
+.bigscreen .sp-med{font-size:clamp(18px,2.6vh,28px);min-height:0}
+.bigscreen .sp-med .pic{width:clamp(64px,12vh,120px);height:clamp(64px,12vh,120px)}
+.bigscreen .sp-ward{min-height:0;padding-block:12px}
+.bigscreen .sp-ward > .pic{width:clamp(130px,20vh,220px);height:clamp(150px,26vh,260px)}
+.bigscreen .sp-say > .pic{width:clamp(100px,18vh,170px);height:clamp(110px,20vh,190px)}
+.bigscreen .sp-go{font-size:clamp(24px,3.6vh,38px);padding:10px 36px}
+.bigscreen .sp-top{margin-bottom:8px}
+.bigscreen .sp-say-line{font-size:clamp(30px,5vh,58px)}
+.bigscreen .sp-say-h{font-size:28px}
+.bigscreen .sp-msg{font-size:34px}
+.bigscreen .team b{font-size:36px}
+.bigscreen .team .t{font-size:40px}
+.ac-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ac-how>div{background:#fff;border:2px solid var(--line);border-radius:20px;padding:16px 18px}
+.ac-how b.ko{font-family:"Jua";font-weight:400;font-size:clamp(28px,4.5vh,44px);display:inline}
+.ac-how>div{display:grid;justify-items:center;text-align:center;align-content:center;min-height:clamp(140px,24vh,240px)}
+.ac-how .ac-n{margin:0 0 8px}
+.ac-how .en{font-size:max(.8em,20px)!important}
+.ac-how p{margin:8px 0 0;font-size:19px}
+.ac-n{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;font-family:"Jua";font-size:22px;margin-right:8px;vertical-align:4px}
+.ac-tag{font-size:28px;padding:6px 18px;border-radius:999px;justify-self:center}
+.ac-tag.sick{background:#FFE0E3}.ac-tag.advice{background:#DDF3EC}.ac-tag.talk{background:#FFF1C9}
+.ac-score{text-align:center;font-size:24px;margin-top:14px;background:#FFF8E1;border:2px dashed var(--sun);border-radius:16px;padding:10px 16px}
+.ac-score b{color:var(--red)}
+.ac-turns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.ac-turns span{background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-family:"Jua";font-size:22px}
+.ac-turns span.top1{border-color:var(--sun);background:#FFF8E1}
+.ac-big{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;background:#fff;border:4px solid var(--sun);border-radius:28px;padding:20px 30px;margin-top:6px}
+.ac-big .pic{width:clamp(150px,34vh,330px);height:clamp(150px,34vh,330px);font-size:180px}
+.ac-big.pop{animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.96);opacity:.4}to{transform:none;opacity:1}}
+.ac-sent{font-family:"Nunito",sans-serif;font-weight:900;font-size:clamp(48px,10vh,104px);line-height:1.1}
+.ac-ko{font-family:"Jua";font-size:clamp(26px,4.5vh,44px);color:var(--teal);margin-top:10px}
+.ac-note{text-align:center;font-size:24px;margin-top:10px;color:var(--red)}
+.ac-list{display:flex;flex-wrap:wrap;gap:8px}
+.ac-list button{font-family:"Nunito",sans-serif;font-weight:900;font-size:22px}
+.ac-list button.passed{opacity:.6}
+@media (max-width:900px){.ac-how{grid-template-columns:1fr}.ac-big{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.talk{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+.talk .dlg{padding:24px 28px}
+.dlg p.swap span b{color:var(--red)}
+.swapper .sw-h{font-size:28px;margin-bottom:0}
+.swapper .sw-l{font-family:"Jua";font-size:22px;margin:10px 0 6px}
+.sw-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sw-row:not(.adv) button{font-size:18px!important;padding:6px 4px}
+.sw-row.adv{grid-template-columns:minmax(0,1fr)}
+.sw-row.adv button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left}
+.sw-row.adv button .en{display:inline;margin:0;font-size:16px!important;white-space:nowrap}
+.sw-row button{padding:8px 10px}
+.sw-row button{font-family:"Nunito",sans-serif;font-weight:900;font-size:22px}
+@media (max-width:900px){.talk{grid-template-columns:1fr}}
+.rule{background:#fff;border-radius:16px;border:3px dashed var(--teal);padding:14px;font-size:22px;line-height:1.8}
+.quiz{display:grid;grid-template-columns:1fr 1.2fr;gap:24px;align-items:center}
+.quiz .pic{width:100%;height:420px;font-size:260px}
+.big{font-size:44px;font-family:"Jua";margin:6px 0}
+.dlg{font-size:28px;line-height:1.9}
+.dlg p{margin:0;display:flex;gap:10px;align-items:center}
+.dlg .who{display:inline-block;min-width:96px;font-family:"Jua";color:var(--teal)}
+
+/* ===== game ===== */
+.hud{display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;align-items:center;background:#fff;border:2px solid var(--line);
+  border-radius:18px;padding:10px 16px;margin-bottom:12px}
+.gauge{height:26px;background:#FDE3E5;border-radius:999px;overflow:hidden;position:relative;border:2px solid #f3b9be}
+.gauge > div{height:100%;background:linear-gradient(90deg,#ff8a95,var(--red));transition:width .4s}
+.gauge span{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;color:#7a1f28}
+.hud .pic{width:40px;height:40px;font-size:30px}
+.stat{font-family:"Jua";font-size:22px;white-space:nowrap}
+.timer{height:10px;border-radius:999px;overflow:hidden;margin-top:6px;background:#E2ECEA}
+.timer > div{height:100%;background:var(--sun);transition:width 1s linear}
+.timer.low > div{background:var(--red)}
+.room{display:grid;grid-template-columns:1.05fr 1fr;gap:14px;min-height:560px}
+.ward{border-radius:22px;border:2px solid var(--line);position:relative;overflow:hidden;background:#F2FAF8 center/cover no-repeat;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:16px;min-height:560px}
+.ward.sports{background-color:#EAF6E2}
+.patient{display:flex;align-items:flex-end;gap:10px}
+.patient .pic{width:250px;height:300px;font-size:200px;flex:none}
+.patient.enter .pic{animation:walk .5s ease-out}
+@keyframes walk{from{transform:translateX(-120px);opacity:0}to{transform:none;opacity:1}}
+.bubble{background:#fff;border:3px solid var(--ink);border-radius:22px;padding:14px 18px;font-size:27px;line-height:1.5;margin-bottom:200px;
+  position:relative;flex:1;font-family:"Nunito";font-weight:800}
+.bubble:after{content:"";position:absolute;left:-16px;bottom:24px;border:14px solid transparent;border-right-color:var(--ink);border-left:0}
+.bubble .nm{display:block;font-family:"Jua";font-size:18px;color:var(--teal);font-weight:400}
+.hl-s{background:#FFE0E3;border-radius:6px;padding:0 3px}
+.hl-f{background:#DDEBFF;border-radius:6px;padding:0 3px}
+.hl-n{background:#FFE7C2;border-radius:6px;padding:0 3px}
+.nurse{display:flex;align-items:center;gap:10px;position:absolute;right:14px;top:14px}
+.nurse .pic{width:110px;height:130px;font-size:90px}
+.nurse .say{background:var(--teal);color:#fff;border-radius:18px;padding:10px 14px;font-family:"Nunito";font-weight:800;font-size:21px;max-width:340px}
+.desk{display:flex;flex-direction:column;gap:12px}
+.box{background:#fff;border:2px solid var(--line);border-radius:20px;padding:14px}
+.box h3{margin:0 0 10px;font-size:24px;display:flex;align-items:center;gap:8px}
+.box h3 .step{background:var(--ink);color:#fff;border-radius:999px;width:30px;height:30px;display:inline-grid;place-items:center;font-size:18px}
+.cabinet{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#EAF4F2;border-radius:14px;padding:10px;border:3px solid #cfe4df}
+.medbtn{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);padding:8px 4px;border-radius:14px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;font-family:"Nunito";font-weight:900;font-size:14px;line-height:1.15;position:relative;min-height:150px}
+.medbtn .pic{width:66px;height:76px;font-size:66px}
+.medbtn.sel{background:#FFF6D6;box-shadow:0 4px 0 #d9a52e;outline:3px solid var(--sun)}
+.medbtn .stock{position:absolute;top:4px;right:6px;background:var(--ink);color:#fff;border-radius:999px;font-size:12px;padding:1px 7px}
+.medbtn.empty{opacity:.35}
+.advs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.advbtn{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:"Nunito";font-weight:900;font-size:19px;padding:10px}
+.advbtn .pic{width:70px;height:70px;font-size:54px}
+.advbtn.sel{background:#FFF6D6;outline:3px solid var(--sun);box-shadow:0 4px 0 #d9a52e}
+.locked{opacity:.4;pointer-events:none}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.banner{position:fixed;inset:0;background:rgba(30,72,68,.55);display:grid;place-items:center;z-index:50}
+.banner .card{background:#fff;border-radius:26px;padding:30px 40px;text-align:center;border:5px solid var(--sun);max-width:640px}
+.banner .card h2{font-size:44px;margin:0 0 10px}
+.banner .card p{font-size:22px}
+.chips{display:flex;gap:10px;margin-bottom:10px}
+.chip{background:#fff;border:3px solid var(--line);border-radius:16px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:"Jua";font-size:20px}
+.chip .pic{width:56px;height:56px;font-size:44px}
+.chip.on{border-color:var(--sun);background:#FFF8E1}
+.chip.done{opacity:.5}
+.pair{font-size:16px;color:#5d807b}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.result .score{font-size:80px;font-family:"Jua";color:var(--red);line-height:1}
+.lb li{font-size:22px;margin:4px 0}
+
+/* ===== writing ===== */
+.wgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
+.avatars{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.av{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);padding:6px;border-radius:14px}
+.av .pic{width:100%;height:84px;font-size:62px}
+.av.sel{outline:4px solid var(--sun);background:#FFF8E1}
+.syms{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.symbtn{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:2px;font-family:"Nunito";font-weight:900;font-size:17px;padding:8px 4px}
+.symbtn .e{font-size:34px}
+.symbtn.sel{outline:4px solid var(--red);background:#FFF2F3}
+.wline{display:flex;align-items:center;gap:8px;margin:8px 0}
+.wline input{flex:1}
+.bank{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px;max-height:40vh;overflow:auto}
+.bank-items{display:flex;flex-wrap:wrap;gap:6px}
+.bank-i{background:#F6FBFA;color:var(--ink);box-shadow:0 3px 0 var(--line);padding:6px 10px;border-radius:12px;display:grid;text-align:left;font-size:16px}
+.bank-i b{font-family:"Nunito",sans-serif;font-weight:900;font-size:17px}
+.bank-i span{font-family:"Jua";font-size:14px;color:#5d807b}
+.copy-guide{background:#FFF8E1;border:2px dashed var(--sun);border-radius:12px;padding:8px 12px;font-family:"Jua";font-size:20px;margin:6px 0}
+.copy-guide b{font-family:"Nunito",sans-serif;font-weight:900}
+.rlabel{font-size:18px;margin:10px 0 0}
+.myreps{grid-column:1 / -1}
+.myrep{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;border-top:1px dashed var(--line);padding:8px 0}
+.myrep .pic{width:52px;height:52px;font-size:40px}
+.myrep div div{font-family:"Nunito",sans-serif;font-weight:800;font-size:17px}
+.editor{max-width:760px;width:calc(100vw - 32px);text-align:left}
+.editor h2{font-size:26px}
+.editor h2 .eni{font-size:18px!important;display:block}
+.ed-row{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:center;margin:6px 0}
+.ed-row input{width:100%}
+.rooms{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.rooms button{font-size:26px;padding:14px;background:#fff;color:var(--ink);box-shadow:0 5px 0 var(--line);position:relative}
+.rooms button.on{background:var(--ink);color:#fff;box-shadow:0 5px 0 #0f2a27}
+.rooms .dot{position:absolute;top:10px;right:14px;width:14px;height:14px;border-radius:50%;background:var(--red)}
+.pickhint{background:#FFF2F3;border:2px dashed #f3b9be;border-radius:14px;padding:8px 12px;font-size:19px;margin:0 0 10px}
+.pickhint b{color:var(--red)}
+.envelope.rp.best{border:3px solid var(--red);background:#FFF7F8}
+.bestmark{font-family:"Jua";color:var(--red);font-size:18px}
+.nroom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.nr-go{display:grid;gap:8px;align-content:center;justify-items:start}
+.nr-go p{margin:0;font-size:18px}
+.level{display:grid;gap:6px;align-content:center}
+.lv-top{display:flex;align-items:center;gap:14px}
+.lv-icon{font-size:56px}
+.lv-name{font-size:28px}
+.lv-xp{margin-left:auto;font-family:"Jua";font-size:22px;text-align:right}
+.lv-xp b{font-size:40px;color:var(--red)}
+.lv-bar{height:22px;border-radius:999px;background:#E2ECEA;overflow:hidden}
+.lv-bar>div{height:100%;background:linear-gradient(90deg,var(--sun),#ffb020);transition:width .6s}
+.nroom .stampbox{grid-column:1 / -1}
+.st{position:relative}
+.st.best{border-color:var(--red);background:#FFE6EA}
+.st i{position:absolute;right:2px;top:0;font-style:normal;font-size:16px}
+@media (max-width:900px){.nroom,.rooms{grid-template-columns:1fr}}
+.hub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:stretch}
+.hub-act{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.hub-act h3{font-size:26px;margin:0 0 4px}
+.hub-act p{margin:4px 0 10px;font-size:17px}
+.hub2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:18px;align-items:start}
+.stampbox h3{font-size:24px}
+.stamps{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin-top:10px}
+.st{aspect-ratio:1;border-radius:12px;background:#FFF2F3;border:2px solid #f3b9be;display:grid;place-items:center;overflow:hidden}
+.st .pic{width:90%;height:90%;font-size:28px}
+.st.empty{background:#fff;border:2px dashed var(--line);color:#cfe4df;font-size:20px}
+.badges{display:flex;gap:6px}
+.badges span{font-size:30px;filter:grayscale(1);opacity:.35;display:grid;justify-items:center;line-height:1}
+.badges span small{font-size:12px;font-family:"Jua"}
+.badges span.on{filter:none;opacity:1}
+.envelope.rp{margin-bottom:12px;padding-top:10px}
+.envelope.rp:before{content:none}
+.envelope.rp .lines{font-family:"Nunito",sans-serif;font-weight:800;font-size:20px;margin-top:4px}
+.nurse2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px;align-items:start}
+.nleft{display:grid;gap:12px;align-content:start;padding-top:14px}
+.nleft .card5 .pic{width:84px;height:84px}
+.nleft .card5{padding-top:22px;background-image:none}
+.nleft .card5 .lines{font-size:21px;line-height:1.5}
+.box.done{opacity:.7}
+.okmark{margin-left:auto;font-size:24px}
+.nmsg{margin-top:8px;font-family:"Jua";font-size:19px;color:var(--warn)}
+.nright{display:flex;flex-direction:column;gap:10px;min-height:0}
+.nright .envelope{padding:12px 14px}
+.nright .envelope h3{font-size:20px;margin:4px 0}
+.nright{padding-top:14px}
+.nright .bank{max-height:max(220px, calc(100vh - 470px))}
+.nright.wait .envelope{opacity:.55}
+.nwait{font-size:22px;color:var(--red);margin:4px 0}
+.rrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px;align-items:center;margin-top:4px}
+.rrow .rlabel{display:grid;font-size:17px;margin:0;line-height:1.15}
+.rrow .rlabel .eni{font-size:13px!important}
+.rrow .wline input{padding:7px 10px;font-size:19px}
+.rrow .wline .ok{font-size:20px;width:26px}
+.rrow .rlabel .ko{font-family:"Jua"}
+.rrow .wline{margin:2px 0}
+.bank-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.bank-top b{font-size:20px;white-space:nowrap}
+.bank-top .bank-q{flex:1;margin:0;font-size:16px;padding:8px 10px}
+.goal{display:grid;gap:22px;justify-items:center;margin-top:4vh}
+.goal-num{font-family:"Jua";font-size:clamp(40px,8vh,80px);text-align:center}
+.goal-num b{color:var(--red);font-size:1.6em}
+.goal-bar{position:relative;width:100%;height:clamp(60px,12vh,120px);background:#fff;border:4px solid var(--teal);border-radius:999px;overflow:hidden}
+.goal-bar>div{height:100%;background:linear-gradient(90deg,#7fd8c3,var(--teal));transition:width .8s}
+.goal-bar i{position:absolute;top:0;bottom:0;width:3px;background:rgba(30,72,68,.18)}
+.goal-bar span{position:absolute;inset:0;display:grid;place-items:center;font-family:"Jua";font-size:clamp(28px,5vh,52px);color:var(--ink)}
+.goal-msg{font-size:clamp(28px,5vh,52px);text-align:center}
+.rep textarea{width:100%;font-family:"Nunito",sans-serif;font-weight:700;font-size:15px;padding:8px;border:2px solid var(--line);border-radius:10px;resize:vertical}
+.rep-sum{font-size:14px;max-width:340px}
+.trep{font-size:15px;margin:2px 0}
+.trep .small{padding:1px 7px;font-size:12px}
+.bank-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.bank-tabs button{font-size:16px;padding:6px 12px;border-radius:10px}
+@media (max-width:900px){.nurse2{height:auto}.hub,.hub2,.nurse2,.hub-act{grid-template-columns:1fr}.stamps{grid-template-columns:repeat(5,1fr)}}
+.picked,.wordbox{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 10px}
+.picked .pic{width:56px;height:56px;font-size:42px}
+.chipk{background:#FFF2F3;border:2px solid #f3b9be;border-radius:999px;padding:4px 14px;font-family:"Jua";font-size:22px}
+.wordbox span:not(.ko){background:#fff;border:2px dashed var(--line);border-radius:10px;padding:3px 10px;font-family:"Nunito";font-weight:800;font-size:19px}
+.wline .cue{font-family:"Jua";font-size:20px;min-width:96px;white-space:nowrap}
+.wline{flex-wrap:wrap}
+.hint{font-family:"Nunito";font-weight:800;font-size:19px;color:#5d807b;letter-spacing:1px;flex-basis:100%;padding-left:150px}
+.hint:empty{display:none}
+.envelope .hint{padding-left:42px}
+.wline .ok{font-size:26px;width:34px;text-align:center}
+.card5{background:#fff;border-radius:22px;border:3px solid var(--ink);padding:16px;position:relative;
+  background-image:repeating-linear-gradient(#fff 0 38px,#E6F1EF 38px 40px)}
+.card5{padding-top:24px}
+.card5 .tag{position:absolute;top:-16px;left:16px;background:var(--red);color:#fff;font-family:"Jua";padding:4px 14px;border-radius:999px}
+.card5 .head{display:flex;gap:12px;align-items:center}
+.card5 .pic{width:110px;height:110px;font-size:84px}
+.card5 .lines{font-size:25px;line-height:40px;font-family:"Nunito";font-weight:800}
+.envelope{background:#fff;border:3px dashed var(--teal);border-radius:18px;padding:16px;position:relative}
+.envelope:before{content:"보건실 처방 봉투 · Prescription";position:absolute;top:-15px;left:16px;background:var(--teal);color:#fff;font-family:"Jua";padding:3px 12px;border-radius:999px;font-size:16px}
+.stepper{display:flex;gap:6px;margin-bottom:10px}
+.stepper span{flex:1;height:8px;border-radius:999px;background:#d6e8e4}
+.stepper span.on{background:var(--teal)}
+
+/* ===== teacher ===== */
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{border-bottom:1px solid #dbe9e6;padding:8px 6px;text-align:left;vertical-align:top}
+th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var(--teal)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;background:#E3F3EF}
+.pill.r{background:#FFE0E3}.pill.y{background:#FFF1C9}
+.scr{background:#fff;border:2px solid var(--line);border-radius:12px;padding:18px 22px;margin:14px 0}
+.scr h2{margin:0;font-size:28px}
+.scr .meta{color:#5d807b;font-size:15px;margin:4px 0 10px}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.roles div{border:2px solid #cfe4df;border-radius:10px;padding:6px 10px;font-size:16px}
+.roles b{font-family:"Jua";font-weight:400;color:var(--teal);display:block;font-size:14px}
+.roles [contenteditable]{outline:none;border-bottom:1px dashed #9ab;min-height:22px}
+.scene{font-family:"Jua";font-size:20px;color:var(--red);margin:12px 0 4px}
+.ln{font-family:"Nunito";font-size:18px;font-weight:700;margin:3px 0;line-height:1.5}
+.ln b{display:inline-block;min-width:110px;font-family:"Jua";font-weight:400;color:var(--ink)}
+.ln em{color:#5d807b;font-style:normal;font-family:"Jua";font-size:15px;font-weight:400}
+.gc{border-top:2px dashed #cfe4df;margin-top:12px;padding-top:8px;font-size:15px}
+#printArea{display:none}
+@media print{
+  body{background:#fff}
+  body > *:not(#printArea){display:none!important}
+  #printArea{display:block}
+  .scr{border:0;padding:0;margin:0;page-break-after:always;break-after:page}
+  .scr:last-child{page-break-after:auto}
+  @page{size:A4;margin:16mm}
+}
+/* ===== speed clinic (전자칠판) ===== */
+.sp-top{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;margin-bottom:12px}
+.sp-team{font-family:"Jua";font-size:40px}
+.sp-clock{font-family:"Jua";font-size:64px;color:var(--red);line-height:1;min-width:190px;text-align:right}
+.sp-clock small{font-size:24px;color:var(--warn);display:block;text-align:right}
+.dots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.dots span{width:26px;height:26px;border-radius:50%;background:#d6e8e4;border:3px solid #fff}
+.dots span.on{background:var(--sun)}.dots span.ok{background:var(--ok)}
+.sp-ward{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;background:linear-gradient(rgba(255,255,255,.9),rgba(255,255,255,.9)),url(img/bg_nurse_office.png) center/cover;border:3px solid var(--line);border-radius:24px;padding:18px 22px;min-height:250px}
+.sp-ward > .pic{width:200px;height:220px;font-size:160px}
+.sp-bubble{min-width:0}
+.sp-bubble{font-family:"Nunito";font-weight:900;font-size:40px;line-height:1.45}
+.sp-bubble .nm{display:block;font-family:"Jua";font-weight:400;font-size:24px;color:var(--teal)}
+.sp-cab{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+.sp-med{background:#fff;color:var(--ink);box-shadow:0 6px 0 var(--line);border-radius:20px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:"Nunito";font-weight:900;font-size:22px;line-height:1.15;position:relative;min-height:200px}
+.sp-med .pic{width:96px;height:106px;font-size:90px}
+.sp-med .no{position:absolute;top:8px;left:10px;background:var(--ink);color:#fff;border-radius:999px;width:34px;height:34px;display:grid;place-items:center;font-family:"Jua";font-size:22px}
+.sp-med.sel{background:#FFF6D6;outline:5px solid var(--sun);box-shadow:0 6px 0 #d9a52e}
+.sp-med.right{outline:5px solid var(--ok)}
+.sp-go{font-size:34px;padding:16px 40px}
+.sp-msg{font-family:"Jua";font-size:30px;min-height:40px;text-align:center}
+.sp-say{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin-top:12px;background:var(--teal);color:#fff;border-radius:24px;padding:16px 24px}
+.sp-say .pic{width:150px;height:170px;font-size:120px}
+.sp-say-h{font-size:24px}.sp-say-h .eni{color:#fff;opacity:.85}
+.sp-say-meds{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
+.sp-say-meds span{display:flex;align-items:center;gap:6px;background:#fff;color:var(--ink);border-radius:999px;padding:4px 14px 4px 6px;font-weight:900;font-size:18px}
+.sp-say-meds .pic{width:40px;height:40px;font-size:34px}
+.sp-say-line{font-family:"Nunito",sans-serif;font-weight:900;font-size:38px;line-height:1.25;margin:4px 0 10px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.team{background:#fff;border:3px solid var(--line);border-radius:18px;padding:14px;text-align:center;cursor:pointer}
+.team.on{border-color:var(--sun);background:#FFF8E1}
+.team b{font-family:"Jua";font-weight:400;font-size:30px;display:block}
+.team-reset{margin-top:8px;font-size:15px;padding:5px 12px;white-space:nowrap}
+.team .t{font-family:"Jua";font-size:34px;color:var(--red)}
+.rank li{font-family:"Jua";font-size:34px;margin:8px 0}
+@media (max-width:900px){
+  .home,.room,.wgrid,.result,.quiz,.match{grid-template-columns:1fr}
+  .words{grid-template-columns:repeat(2,1fr)}
+  .avatars{grid-template-columns:repeat(5,1fr)}
+  .syms{grid-template-columns:repeat(3,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<div id="printArea"></div>
+<script>
+/* =========================================================
+   Nurse's Office (보건실)
+   5학년 영어 11단원 I Have a Headache · 만든 이: Tr. Olivia
+   ========================================================= */
+const SUPA = 'https://kpjbzvcvbhuakevhyruz.supabase.co';
+const KEY  = 'sb_publishable_Q7JPoZ0VkRx4-2t1pj8Hpg_ibbRnrpM';
+let DEMO = false;
+async function rpc(fn, args = {}) {
+  if (DEMO) return demoRpc(fn, args);
+  // 서버에 닿지 못하거나(아티팩트 미리보기 등), 응답이 이상하거나, 5초 안에 답이 없으면
+  // 이 브라우저 안에서만 도는 미리보기 모드로 바꿔요.
+  const toDemo = () => { DEMO = true; demoSeed(); demoBadge(); return demoRpc(fn, args); };
+  try {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => ctl && ctl.abort(), 5000);
+    const r = await fetch(`${SUPA}/rest/v1/rpc/${fn}`, {
+      method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
+      signal: ctl ? ctl.signal : undefined
+    });
+    clearTimeout(timer);
+    const t = await r.text();
+    if (!r.ok) { if (!SERVER_OK) return toDemo(); throw new Error(r.status + ' ' + t); }
+    SERVER_OK = true;
+    return t ? JSON.parse(t) : null;
+  } catch (e) {
+    if (SERVER_OK) throw e;
+    return toDemo();
+  }
+}
+let SERVER_OK = false;
+
+/* ---------- 미리보기 모드: 저장은 이 화면에서만, 예시 문진표 3장 포함 ---------- */
+const DB = { pin: null, numbers: {}, cards: [], replies: [], students: {}, seq: 1 };
+function demoSeed() {
+  const ex = [
+    { no: 91, avatar: 'dino', guest: 'Rex', sym: ['fever'], feel: 'thirsty', extra: 'I ran very fast.' },
+    { no: 92, avatar: 'snowman', guest: 'Snowy', sym: ['runnynose', 'headache'], feel: null, extra: null },
+    { no: 93, avatar: 'robot', guest: 'Beep', sym: ['stomachache'], feel: 'tired', extra: 'I ate too much pizza.' }
+  ];
+  ex.forEach(e => DB.cards.push({ id: 'demo' + DB.seq++, class_no: 1, student_no: e.no, student_name: e.no + '번', avatar: e.avatar,
+    guest_name: e.guest, symptoms: e.sym, feel: e.feel, extra: e.extra,
+    card_lines: [`Hello, I'm ${e.guest}.`, ...e.sym.map((k, i) => i ? `I have a ${SYM[k].en}, too.` : `I have a ${SYM[k].en}.`), ...(e.feel ? [`I'm ${e.feel}.`] : []), ...(e.extra ? [e.extra] : [])],
+    hidden: false, featured: false }));
+}
+function demoBadge() {
+  if (document.getElementById('demoBadge')) return;
+  const d = document.createElement('div'); d.id = 'demoBadge';
+  d.innerHTML = '미리보기 모드 · 이 화면에서만 저장돼요<span class="en">Preview mode · saved on this screen only</span>';
+  document.body.appendChild(d);
+}
+function demoRpc(fn, a) {
+  const c = DB.cards, mine = (cls, no) => c.find(x => x.class_no === cls && x.student_no === no);
+  const sk = (cls, no) => cls + '-' + no;
+  const pinOk = p => DB.students[sk(a.p_class, a.p_no)] != null && DB.students[sk(a.p_class, a.p_no)].pin === (p || '');
+  switch (fn) {
+    case 'hn_get_numbers': return DB.numbers[a.p_class] || null;
+    case 'hn_check_pin': return pinOk(a.p_pin);
+    case 'hn_student_login': { const st = DB.students[sk(a.p_class, a.p_no)]; if (!st) return 'new'; if (st.pin === (a.p_pin || '')) { st.last = new Date().toISOString(); return 'ok'; } return 'wrong'; }
+    case 'hn_student_register': { if (DB.students[sk(a.p_class, a.p_no)]) return 'exists'; if ((a.p_pin || '').length < 4) return 'bad'; DB.students[sk(a.p_class, a.p_no)] = { pin: a.p_pin, last: new Date().toISOString() }; return 'ok'; }
+    case 'hn_teacher_students': {
+      const nos = new Set([...Object.keys(DB.students).filter(k => k.startsWith(a.p_class + '-')).map(k => +k.split('-')[1]),
+        ...c.filter(x => x.class_no === a.p_class).map(x => x.student_no), ...DB.replies.filter(r => r.class_no === a.p_class).map(r => r.reply_no)]);
+      return [...nos].sort((x, y) => x - y).map(no => { const st = DB.students[sk(a.p_class, no)];
+        return { no, registered: !!st, last_at: st ? st.last : null, has_card: !!mine(a.p_class, no), replies: DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === no && r.lines).length }; });
+    }
+    case 'hn_teacher_student': {
+      const k = sk(a.p_class, a.p_no);
+      if (a.p_action === 'reset') delete DB.students[k];
+      else if (a.p_action === 'setpin') DB.students[k] = { pin: a.p_pin, last: (DB.students[k] || {}).last || null };
+      else if (a.p_action === 'delete') { const m = mine(a.p_class, a.p_no);
+        DB.replies = DB.replies.filter(r => !(r.class_no === a.p_class && r.reply_no === a.p_no) && !(m && r.card_id === m.id));
+        if (m) c.splice(c.indexOf(m), 1); delete DB.students[k]; }
+      return 'ok';
+    }
+    case 'hn_my_card': {
+      if (!pinOk(a.p_pin)) return null;
+      const m = mine(a.p_class, a.p_no), R = DB.replies.filter(r => r.lines);
+      return { card: m || null, replies: m ? R.filter(r => r.card_id === m.id).map(r => ({ id: r.id, lines: r.lines, meds: r.meds, best: !!r.best })) : [],
+        stamps: R.filter(r => r.class_no === a.p_class && r.reply_no === a.p_no).map(r => { const cc = c.find(x => x.id === r.card_id) || {}; return { avatar: cc.avatar, guest_name: cc.guest_name, best: !!r.best }; }) };
+    }
+    case 'hn_pick_best': {
+      if (!pinOk(a.p_pin)) return 'pin';
+      const m = mine(a.p_class, a.p_no), t = m && DB.replies.find(r => r.id === a.p_reply && r.card_id === m.id && r.lines);
+      if (!t) return 'fail';
+      if (t.best) return 'ok';
+      if (DB.replies.filter(r => r.card_id === m.id && r.best).length >= 2) return 'limit';
+      t.best = true;
+      return 'ok';
+    }
+    case 'hn_edit_card': { if (!pinOk(a.p_pin)) return 'pin'; const m = mine(a.p_class, a.p_no); if (!m) return 'fail'; m.guest_name = a.p_guest || m.guest_name; m.card_lines = a.p_lines; return 'ok'; }
+    case 'hn_edit_reply': { if (!pinOk(a.p_pin)) return 'pin'; const r = DB.replies.find(x => x.id === a.p_reply && x.reply_no === a.p_no && x.class_no === a.p_class && x.lines); if (!r) return 'fail'; r.lines = a.p_lines; return 'ok'; }
+    case 'hn_my_replies': { if (!pinOk(a.p_pin)) return null; return DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === a.p_no && r.lines).map(r => { const cc = c.find(x => x.id === r.card_id) || {}; return { id: r.id, lines: r.lines, best: !!r.best, guest_name: cc.guest_name, avatar: cc.avatar, card_lines: cc.card_lines }; }); }
+    case 'hn_teacher_edit_card': { const m = c.find(x => x.id === a.p_card); if (!m) return false; if (a.p_guest) m.guest_name = a.p_guest; if (Array.isArray(a.p_lines)) m.card_lines = a.p_lines; return true; }
+    case 'hn_teacher_edit_reply': { const r = DB.replies.find(x => x.id === a.p_reply); if (!r) return false; r.lines = a.p_lines; return true; }
+    case 'hn_teacher_report': {
+      const nos = new Set([...Object.keys(DB.students).filter(k => k.startsWith(a.p_class + '-')).map(k => +k.split('-')[1]),
+        ...c.filter(x => x.class_no === a.p_class).map(x => x.student_no), ...DB.replies.filter(r => r.class_no === a.p_class).map(r => r.reply_no)]);
+      return [...nos].sort((x, y) => x - y).map(no => { const m = mine(a.p_class, no);
+        return { no, card: m ? { guest_name: m.guest_name, symptoms: m.symptoms, feel: m.feel, extra: m.extra, lines: m.card_lines } : null,
+          written: DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === no && r.lines).map(r => ({ lines: r.lines, best: !!r.best })),
+          received: m ? DB.replies.filter(r => r.card_id === m.id && r.lines).length : 0 }; });
+    }
+    case 'hn_class_progress': return DB.replies.filter(r => r.lines && r.class_no === a.p_class).length;
+    case 'hn_teacher_del_reply': DB.replies = DB.replies.filter(r => r.id !== a.p_reply); return true;
+    case 'hn_submit_card': {
+      if (!pinOk(a.p_pin)) return 'pin';
+      const m = mine(a.p_class, a.p_no);
+      if (m && DB.replies.some(r => r.card_id === m.id && r.lines)) return 'locked';
+      const row = { id: m ? m.id : 'demo' + DB.seq++, class_no: a.p_class, student_no: a.p_no, student_name: a.p_name, avatar: a.p_avatar,
+        guest_name: a.p_guest, symptoms: a.p_symptoms, feel: a.p_feel, extra: a.p_extra, card_lines: a.p_lines, hidden: false, featured: m ? m.featured : false };
+      if (m) Object.assign(m, row, { assigned_no: null }); else c.push(row);
+      return 'ok';
+    }
+    case 'hn_get_delivery': {
+      if (!pinOk(a.p_pin)) return null;
+      let p = DB.replies.find(r => r.class_no === a.p_class && r.reply_no === a.p_no && !r.lines);
+      if (!p) {
+        const cnt = id => DB.replies.filter(r => r.card_id === id).length;
+        const pool = shuffle(c.filter(x => x.class_no === a.p_class && x.student_no !== a.p_no && !x.hidden
+          && !DB.replies.some(r => r.card_id === x.id && r.reply_no === a.p_no) && cnt(x.id) < 5)).sort((x, y) => cnt(x.id) - cnt(y.id));
+        if (!pool.length) return null;
+        p = { id: DB.seq++, card_id: pool[0].id, class_no: a.p_class, reply_no: a.p_no, lines: null };
+        DB.replies.push(p);
+      }
+      const r = c.find(x => x.id === p.card_id);
+      return { id: r.id, avatar: r.avatar, guest_name: r.guest_name, symptoms: r.symptoms, feel: r.feel, card_lines: r.card_lines };
+    }
+    case 'hn_submit_reply': {
+      if (!pinOk(a.p_pin)) return 'pin';
+      const p = DB.replies.find(r => r.card_id === a.p_card && r.reply_no === a.p_no && !r.lines);
+      if (!p) return 'fail';
+      Object.assign(p, { lines: a.p_lines, meds: a.p_meds });
+      return 'ok';
+    }
+    case 'hn_featured': return c.filter(x => x.featured && !x.hidden);
+    case 'hn_has_pw': case 'hn_teacher_login': case 'hn_setup_pw': case 'hn_change_pw': return true;
+    case 'hn_teacher_data': return { cards: c.filter(x => x.class_no === a.p_class).sort((x, y) => x.student_no - y.student_no)
+        .map(x => ({ ...x, replies: DB.replies.filter(r => r.card_id === x.id && r.lines).map(r => ({ id: r.id, reply_no: r.reply_no, lines: r.lines, best: !!r.best })) })),
+      replies_total: DB.replies.filter(r => r.lines && r.class_no === a.p_class).length, scores: [], numbers: DB.numbers[a.p_class] || '', student_pin: DB.pin };
+    case 'hn_set_numbers': DB.numbers[a.p_class] = a.p_numbers; return true;
+    case 'hn_set_student_pin': DB.pin = (a.p_pin || '').trim() || null; return true;
+    case 'hn_teacher_action': {
+      const i = c.findIndex(x => x.id === a.p_card); if (i < 0) return false; const r = c[i];
+      ({ hide: () => r.hidden = true, unhide: () => r.hidden = false, feature: () => r.featured = true, unfeature: () => r.featured = false,
+         clear_reply: () => { DB.replies = DB.replies.filter(x => x.card_id !== r.id); },
+         delete: () => c.splice(i, 1) }[a.p_action] || (() => {}))();
+      return true;
+    }
+    default: return null;
+  }
+}
+
+/* ---------- data ---------- */
+const SYM = {
+  cold:        { en:'cold',        ko:'감기', kid:'kid1', emoji:'🤧', act:'콜록콜록 기침하며' },
+  fever:       { en:'fever',       ko:'열',   kid:'kid2', emoji:'🤒', act:'이마에 손을 대며' },
+  headache:    { en:'headache',    ko:'두통', kid:'kid3', emoji:'🤕', act:'머리를 감싸며' },
+  runnynose:   { en:'runny nose',  ko:'콧물', kid:'kid4', emoji:'💧', act:'코를 훌쩍이며' },
+  stomachache: { en:'stomachache', ko:'복통', kid:'kid5', emoji:'😣', act:'배를 잡으며' }
+};
+const SYM_KEYS = Object.keys(SYM);
+const FEEL = {
+  tired:   { en:'tired',   ko:'피곤한', emoji:'🥱', act:'하품하며' },
+  thirsty: { en:'thirsty', ko:'목마른', emoji:'🥵', act:'목을 만지며' }
+};
+const MEDS = {
+  cold:        { name:'Cold Medicine',        ko:'감기약',     img:'med_cold',        color:'#9cc8ff', mark:'❄️' },
+  fever:       { name:'Fever Medicine',       ko:'해열제',     img:'med_fever',       color:'#ffa3a3', mark:'🌡️' },
+  headache:    { name:'Headache Medicine',    ko:'두통약',     img:'med_headache',    color:'#ffe07a', mark:'⚡' },
+  runnynose:   { name:'Runny Nose Medicine',  ko:'콧물약',     img:'med_runnynose',   color:'#c7a6e8', mark:'🧻' },
+  stomachache: { name:'Stomachache Medicine', ko:'배 아플 때 약', img:'med_stomachache', color:'#f7b6c8', mark:'🍵' }
+};
+const ADV = {
+  rest:     { en:'Get some rest.',      ko:'푹 쉬어.',        img:'adv_rest',     emoji:'🛏️' },
+  sleep:    { en:'Get some sleep.',     ko:'잠 좀 자.',       img:'adv_sleep',    emoji:'😴' },
+  water:    { en:'Drink warm water.',   ko:'따뜻한 물을 마셔.', img:'adv_water',    emoji:'☕' },
+  doctor:   { en:'Go see a doctor.',    ko:'병원에 가 봐.',    img:'adv_doctor',   emoji:'🏥' },
+  wellsoon: { en:'Get well soon.',      ko:'얼른 나아.',       img:'adv_wellsoon', emoji:'🌈' },
+  vitamins: { en:'Take some vitamins.', ko:'비타민 좀 먹어.',  img:'adv_vitamins', emoji:'🍊' }
+};
+const advKeys = a => ADV[a].en.replace(/[.]/g, '').split(' ').filter(w => !['some', 'a', 'Go', 'Get', 'Take'].includes(w));
+const adviceFor = f => f === 'tired' ? 'sleep' : f === 'thirsty' ? 'water' : 'rest';
+const nurseLine = adv => `That's too bad. Take this medicine. ${ADV[adv].en}`;
+
+const AVATARS = [
+  { id:'kid1', emoji:'👦' }, { id:'kid2', emoji:'👧' }, { id:'kid3', emoji:'🧒' },
+  { id:'kid4', emoji:'👧' }, { id:'kid5', emoji:'👦' }, { id:'kid6', emoji:'👩' },
+  { id:'principal', emoji:'👴' }, { id:'cook', emoji:'👩‍🍳' }, { id:'snowman', emoji:'☃️' },
+  { id:'robot', emoji:'🤖' }, { id:'dino', emoji:'🦖' }, { id:'alien', emoji:'👽' },
+  { id:'ghost', emoji:'👻' }, { id:'penguin', emoji:'🐧' }, { id:'hero', emoji:'🦸' }
+];
+const KID_SICK = { kid1:'cold', kid2:'fever', kid3:'headache', kid4:'runnynose', kid5:'stomachache', kid6:'tired' };
+function avImg(id, mood) {
+  if (id && id.startsWith('kid')) return mood === 'happy' ? `${id}_happy` : `${id}_${KID_SICK[id]}`;
+  if (id === 'snowman') return mood === 'happy' ? 'guest_snowman_happy' : 'guest_snowman';
+  return 'guest_' + id;
+}
+const avEmoji = id => (AVATARS.find(a => a.id === id) || { emoji:'🙂' }).emoji;
+
+/* ---------- helpers ---------- */
+const $app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+function pic(name, emoji, cls = '', style = '') {
+  return `<span class="pic ${cls}" style="${style}"><img src="img/${name}.png" alt="" onerror="this.parentNode.classList.add('noimg')"><i>${emoji}</i></span>`;
+}
+const medPic = (k, style = '') => pic(MEDS[k].img, MEDS[k].mark, 'med', `--c:${MEDS[k].color};${style}`);
+function toast(msg, ms = 1800) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms);
+}
+function speak(text) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = .88;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('en-US'));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem('hn_' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('hn_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function norm(s) {
+  return String(s || '').toLowerCase().replace(/[’‘`]/g, "'")
+    .replace(/\bi am\b/g, "i'm").replace(/\bthat is\b/g, "that's")
+    .replace(/[^a-z' ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function tidy(s) {
+  s = String(s || '').trim().replace(/\s+/g, ' ');
+  if (!s) return s;
+  s = s[0].toUpperCase() + s.slice(1);
+  s = s.replace(/\bi\b/g, 'I').replace(/\bi'm\b/gi, "I'm");
+  if (!/[.!?]$/.test(s)) s += '.';
+  return s;
+}
+function parseNumbers(txt) {
+  const out = [];
+  String(txt || '').split(/[,\s]+/).forEach(p => {
+    const m = p.match(/^(\d+)-(\d+)$/);
+    if (m) { for (let i = +m[1]; i <= +m[2] && out.length < 200; i++) out.push(i); }
+    else if (/^\d+$/.test(p)) out.push(+p);
+  });
+  return [...new Set(out)].sort((a, b) => a - b);
+}
+function hl(line) {
+  let h = esc(line);
+  const words = [...SYM_KEYS.map(k => SYM[k].en), 'tired', 'thirsty'].sort((a, b) => b.length - a.length);
+  words.forEach(w => {
+    const cls = (w === 'tired' || w === 'thirsty') ? 'hl-f' : 'hl-s';
+    h = h.replace(new RegExp(`\\b(${w})\\b`, 'gi'), `<span class="${cls}">$1</span>`);
+  });
+  return h.replace(/\b(don't|not)\b/gi, '<span class="hl-n">$1</span>');
+}
+let TMR = null;
+// 쓰기 칸에는 붙여넣기·끌어 놓기 금지 (직접 쓰기)
+['paste', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target && e.target.closest && e.target.closest('.wline')) { e.preventDefault(); toast('직접 써요!\nType it yourself!'); }
+}, true));
+const engOK = v => { v = String(v || '').trim(); return /^[A-Za-z0-9 ,.'!?-]+$/.test(v) && v.split(/\s+/).filter(Boolean).length >= 2; };
+// 손님(환자)이 더 하고 싶은 말 문장 창고
+const BANK_PATIENT = [
+  ['이유 · Why', [
+    ['I played in the snow.', '눈에서 놀았어요.'], ['I played outside in the rain.', '비 맞으며 밖에서 놀았어요.'],
+    ['I ate too much pizza.', '피자를 너무 많이 먹었어요.'], ['I ate too much ice cream.', '아이스크림을 너무 많이 먹었어요.'],
+    ['I ate too many candies.', '사탕을 너무 많이 먹었어요.'], ['I drank cold water.', '찬물을 마셨어요.'],
+    ['I went to bed late.', '늦게 잤어요.'], ['I played games all night.', '밤새 게임을 했어요.'],
+    ['I ran very fast.', '아주 빨리 뛰었어요.'], ["I didn't wear a coat.", '외투를 안 입었어요.'],
+    ["I didn't wash my hands.", '손을 안 씻었어요.']]],
+  ['몸 상태 · How I feel', [
+    ["I don't feel well.", '몸이 안 좋아요.'], ['I feel cold.', '추워요.'], ['I feel dizzy.', '어지러워요.'],
+    ["I can't sleep.", '잠을 못 자요.'], ["I'm hungry.", '배고파요.'], ['My throat hurts.', '목이 아파요.']]],
+  ['부탁 · Please', [
+    ['Please help me.', '도와주세요.'], ['Can I lie down?', '누워도 돼요?'], ['Can I call my mom?', '엄마한테 전화해도 돼요?'],
+    ['I want to go home.', '집에 가고 싶어요.']]]
+];
+// 보건 선생님 답장 문장 창고
+const BANK_NURSE = [
+  ['조언 · Advice', Object.keys(ADV).map(k => [ADV[k].en, ADV[k].ko])],
+  ['더 해 줄 말 · More', [
+    ['Go to bed early.', '일찍 자.'], ['Wear a warm coat.', '따뜻한 외투를 입어.'], ['Wash your hands.', '손을 씻어.'],
+    ["Don't eat too much.", '너무 많이 먹지 마.'], ["Don't play games all night.", '밤새 게임하지 마.'],
+    ['Lie down here.', '여기 누워.'], ['Take care.', '몸조심해.'], ["You'll be okay.", '괜찮아질 거야.']]]
+];
+// 손님이 쓴 이유에 딱 맞는 답장 추천
+function nurseTips(lines) {
+  const out = [], t = (lines || []).join(' ');
+  let m;
+  if ((m = t.match(/I ate too much ([A-Za-z ]+?)\./i))) out.push([`Don't eat too much ${m[1]}.`, '너무 많이 먹지 마.']);
+  if ((m = t.match(/I ate too many ([A-Za-z ]+?)\./i))) out.push([`Don't eat too many ${m[1]}.`, '너무 많이 먹지 마.']);
+  if (/went to bed late|can't sleep/i.test(t)) out.push(['Go to bed early.', '일찍 자.']);
+  if (/games all night/i.test(t)) out.push(["Don't play games all night.", '밤새 게임하지 마.']);
+  if (/snow|rain|coat|feel cold/i.test(t)) out.push(['Wear a warm coat.', '따뜻한 외투를 입어.']);
+  if (/wash my hands/i.test(t)) out.push(['Wash your hands.', '손을 씻어.']);
+  if (/cold water/i.test(t)) out.push(['Drink warm water.', '따뜻한 물을 마셔.']);
+  if (/ran very fast|thirsty/i.test(t)) out.push(['Drink warm water.', '따뜻한 물을 마셔.']);
+  if (/tired|dizzy/i.test(t)) out.push(['Get some sleep.', '잠 좀 자.']);
+  if (/lie down/i.test(t)) out.push(['Lie down here.', '여기 누워.']);
+  return out.filter((x, i, a) => a.findIndex(y => y[0] === x[0]) === i);
+}
+// 문장 창고 그리기: 한국어/영어로 찾기, 누르면 칸 아래에 '보고 쓰기' 안내만 나와요 (자동 입력 X)
+function bankHTML(id, groups, tips) {
+  const all = [...(tips && tips.length ? [['⭐ 딱 맞는 말', tips]] : []), ...groups];
+  return `<div class="bank" id="${id}">
+    <div class="bank-top"><b class="ko">📚 문장 창고 <span class="eni">Sentence bank</span></b>
+      <input class="bank-q" placeholder="🔎 찾기 · Search (피자, 추워…)" oninput="bankFilter('${id}', this.value)" autocomplete="off"></div>
+    <div class="bank-tabs">${all.map(([g], i) => `<button class="${i ? 'ghost' : ''}" onclick="bankTab('${id}', ${i})">${g.split(' · ')[0]}</button>`).join('')}</div>
+    ${all.map(([g, items], i) => `<div class="bank-g" data-i="${i}" ${i ? 'hidden' : ''}><div class="bank-items">${items.map(([en, ko]) =>
+      `<button class="bank-i" data-s="${esc((en + ' ' + ko).toLowerCase())}" onclick='bankPick(${esc(JSON.stringify(en))})'><b>${esc(en)}</b><span>${esc(ko)}</span></button>`).join('')}</div></div>`).join('')}
+  </div>`;
+}
+function bankTab(id, i) {
+  const q = document.querySelector(`#${id} .bank-q`); if (q) q.value = '';
+  document.querySelectorAll(`#${id} .bank-tabs button`).forEach((b, k) => b.classList.toggle('ghost', k !== i));
+  document.querySelectorAll(`#${id} .bank-g`).forEach(g => { g.hidden = +g.dataset.i !== i; g.querySelectorAll('.bank-i').forEach(b => b.hidden = false); });
+}
+function bankFilter(id, q) {
+  q = q.trim().toLowerCase();
+  if (!q) return bankTab(id, 0);
+  document.querySelectorAll(`#${id} .bank-tabs button`).forEach(b => b.classList.add('ghost'));
+  document.querySelectorAll(`#${id} .bank-i`).forEach(b => b.hidden = !b.dataset.s.includes(q));
+  document.querySelectorAll(`#${id} .bank-g`).forEach(g => g.hidden = ![...g.querySelectorAll('.bank-i')].some(b => !b.hidden));
+}
+let BANK_TARGET = null;
+function bankPick(en) {
+  const inp = BANK_TARGET && document.getElementById(BANK_TARGET);
+  const box = document.getElementById('copyGuide');
+  if (box) { box.innerHTML = `✍️ 보고 직접 써요 · Type it: <b>${esc(en)}</b>`; box.hidden = false; }
+  if (inp) inp.focus();
+}
+function shakeEl(sel) { const e = document.querySelector(sel); if (e) { e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); } }
+function uiModal(html, onOk, okLabel = '네<span class="en">Yes</span>') {
+  const d = document.createElement('div'); d.className = 'banner';
+  d.innerHTML = `<div class="card">${html}<div class="row" style="justify-content:center;margin-top:14px"><button class="ghost" data-x>취소<span class="en">Cancel</span></button><button class="red" data-ok>${okLabel}</button></div></div>`;
+  document.body.appendChild(d);
+  d.querySelector('[data-x]').onclick = () => d.remove();
+  d.querySelector('[data-ok]').onclick = () => { onOk(); d.remove(); };
+  d.querySelector('[data-ok]').focus();
+}
+function uiConfirm(msg, onYes) { const [k, e] = msg.split('\n'); uiModal(`<p style="font-size:24px;font-family:Jua;margin:0">${esc(k)}</p>${e ? `<p class="eni" style="font-size:18px">${esc(e)}</p>` : ''}`, onYes); }
+function stopTimer() { clearInterval(TMR); TMR = null; }
+function serverError(e) {
+  console.error(e);
+  toast('서버에 연결하지 못했어요. 선생님께 알려 주세요.\nCan\'t reach the server. Please tell your teacher.', 3000);
+}
+
+/* =========================================================
+   HOME
+   ========================================================= */
+function home() {
+  stopTimer();
+  $app.innerHTML = `
+  <div class="wrap">
+    <div class="home">
+      <div class="sign">
+        <h1><span class="cross">+</span>Nurse's Office</h1>
+        <p class="ko" style="font-size:26px;color:var(--teal);margin:0">보건실 <span class="eni">· School Nurse's Office</span></p><p>콜록콜록, 지끈지끈! 오늘은 우리가 보건 선생님이에요.<br>아픈 친구의 말을 잘 읽고, 딱 맞는 약과 조언을 주세요.<span class="en" style="font-size:.8em">Achoo! Ouch! Today, we are school nurses.<br>Read carefully and give the right medicine and advice.</span></p>
+        <div class="door">${pic('nurse', '👩‍⚕️')}${pic('nurse_m', '👨‍⚕️')}<span class="big" style="font-size:30px">What's wrong?</span></div>
+      </div>
+      <div>
+        <div class="menu">
+          <button class="ghost" onclick="practice('words')"><span class="em">📣</span><span>다 함께 연습하기 <span class="eni">Practice Together</span><small>전자칠판 · 단어, 표현, 스피드 진료 연습<br>Board · words, expressions, Speed Clinic practice</small></span></button>
+          <button class="sun" onclick="speedSetup()"><span class="em">⏱️</span><span>스피드 진료 <span class="eni">Speed Clinic</span><small>읽기 · 전자칠판 · 모둠별로 나와서 읽고 약 고르기<br>Reading · Board · Teams read and pick medicine</small></span></button>
+          <button class="ghost" onclick="acSetup()"><span class="em">🎭</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>말하기 · 전자칠판 · 몸으로 표현하고 영어로 맞히기<br>Speaking · Board · Act it out, guess in English</small></span></button>
+          <button class="red" onclick="writeLogin()"><span class="em">📋</span><span>보건실 문진표 <span class="eni">Patient Forms</span><small>쓰기 · 크롬북 개별 · 손님 되기 & 보건 선생님 되기<br>Writing · Chromebook · Be a patient & be a nurse</small></span></button>
+        </div>
+        <div class="credit">5학년 영어 11. I Have a Headache · 만든 이 Tr. Olivia</div>
+        <div class="center" style="margin-top:18px"><button class="ghost small teacher-btn" onclick="teacher()">🗂️ 교사 모드 · Teacher</button></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =========================================================
+   PRACTICE (전자칠판)
+   ========================================================= */
+const WORDS = [
+  ['cold','감기',()=>pic('kid1_cold','🤧')], ['fever','열',()=>pic('kid2_fever','🤒')],
+  ['headache','두통',()=>pic('kid3_headache','🤕')], ['runny nose','콧물',()=>pic('kid4_runnynose','💧')],
+  ['stomachache','복통',()=>pic('kid5_stomachache','😣')], ['tired','피곤한',()=>pic('word_tired','🥱')],
+  ['thirsty','목마른',()=>pic('word_thirsty','🥵')], ['medicine','약',()=>medPic('headache')],
+  ['rest','휴식',()=>pic('adv_rest','🛏️')], ['sleep','잠',()=>pic('adv_sleep','😴')]
+];
+function practice(tab) {
+  stopTimer();
+  const tabs = [['words','단어 카드<span class="en">Word Cards</span>'],['talk','표현 익히기<span class="en">Expressions</span>'],['speed','스피드 진료 연습<span class="en">Speed Clinic Practice</span>']];
+  let body = '';
+  if (tab === 'words') {
+    body = `<p class="muted">카드를 누르면 소리가 나고, 한 번 더 누르면 뜻이 보여요.<span class="en">Tap to listen. Tap again to see the meaning.</span></p>
+    <div class="words">${WORDS.map((w, i) => `<div class="wcard" onclick="wordTap(this,${i})">${w[2]()}<b>${w[0]}</b><span class="ko">${w[1]}</span></div>`).join('')}</div>`;
+  } else if (tab === 'talk') {
+    body = `<div id="talkBox"></div>`;
+  } else if (tab === 'match') {
+    body = `<p class="muted">증상을 누르면 짝이 되는 약이 빛나요.<span class="en">Tap a symptom to light up its medicine.</span></p>
+    <div class="match">
+      <div class="mcol">${SYM_KEYS.map(k => `<div class="mitem" id="ms_${k}" onclick="matchTap('${k}')">${pic(SYM[k].kid + '_' + k, SYM[k].emoji)}I have a ${SYM[k].en}.</div>`).join('')}</div>
+      <div class="mcol">${shuffle(SYM_KEYS).map(k => `<div class="mitem" id="mm_${k}">${medPic(k)}${MEDS[k].name}</div>`).join('')}</div>
+      <div class="rule"><b class="ko" style="font-size:28px">아플 때 하는 조언 <span class="eni">Advice</span></b>
+        <div class="advlist">${[['Take this medicine.', '이 약 좀 먹어.', '💊'], ...Object.keys(ADV).map(k => [ADV[k].en, ADV[k].ko, ADV[k].emoji])]
+          .map(x => `<button class="ghost" onclick='speak(${esc(JSON.stringify(x[0]))})'><span>${x[2]} ${esc(x[0])}</span><span class="ko">${esc(x[1])}</span></button>`).join('')}</div>
+    </div>`;
+  } else if (tab === 'speed') {
+    return spPractice();
+  } else if (tab === 'quiz') {
+    body = `<div class="panel quiz" id="quizBox"></div>`;
+  }
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📣 다 함께 연습하기<span class="en">Practice Together</span></h2>
+      <div class="tabs">${tabs.map(t => `<button class="${t[0] === tab ? 'on' : ''}" onclick="practice('${t[0]}')">${t[1]}</button>`).join('')}</div></div>
+    ${body}</div>`;
+  if (tab === 'quiz') quizNext();
+  if (tab === 'talk') talkDraw();
+}
+let TALK = { sym: 'headache', adv: 'rest' };
+function talkLines() {
+  return [['Nurse', "What's wrong?"], ['Student', `I have a ${SYM[TALK.sym].en}.`], ['Nurse', "That's too bad."],
+          ['Nurse', 'Take this medicine.'], ['Nurse', ADV[TALK.adv].en], ['Student', 'Okay. Thank you.']];
+}
+function talkDraw() {
+  const L = talkLines();
+  document.getElementById('talkBox').innerHTML = `
+    <div class="talk">
+      <div class="panel dlg">
+        ${L.map((l, i) => `<p class="${(i === 1 || i === 4) ? 'swap' : ''}"><span class="who">${l[0]}</span><button class="small ghost" onclick='speak(${esc(JSON.stringify(l[1]))})'>🔊</button><span>${i === 1 ? `I have a <b>${SYM[TALK.sym].en}</b>.` : i === 4 ? `<b>${esc(ADV[TALK.adv].en)}</b>` : esc(l[1])}</span></p>`).join('')}
+        <div class="row" style="margin-top:12px"><button onclick='speak(${esc(JSON.stringify(L.map(l => l[1]).join(' ')))})'>🔊 전체 듣기<span class="en">Listen to all</span></button></div>
+      </div>
+      <div class="panel swapper">
+        <div class="ko sw-h">바꿔 말해 보기<span class="en">Change and say</span></div>
+        <div class="sw-l">어디가 아픈가요? <span class="eni">What's wrong?</span></div>
+        <div class="sw-row">${SYM_KEYS.map(k => `<button class="${TALK.sym === k ? '' : 'ghost'}" onclick="TALK.sym='${k}';talkDraw();speak('I have a ${SYM[k].en}.')">${SYM[k].emoji} ${SYM[k].en}<span class="en">${SYM[k].ko}</span></button>`).join('')}</div>
+        <div class="sw-l">어떤 조언을 할까요? <span class="eni">What advice?</span></div>
+        <div class="sw-row adv">${Object.keys(ADV).map(a => `<button class="${TALK.adv === a ? '' : 'ghost'}" onclick="TALK.adv='${a}';talkDraw();speak(${esc(JSON.stringify('Take this medicine. ' + ADV[a].en))})">${ADV[a].emoji} ${ADV[a].en}<span class="en">${ADV[a].ko}</span></button>`).join('')}</div>
+      </div>
+    </div>`;
+}
+function wordTap(el, i) { if (el.dataset.t) el.classList.toggle('show'); el.dataset.t = 1; speak(WORDS[i][0]); }
+function matchTap(k) {
+  document.querySelectorAll('.mitem').forEach(e => e.classList.remove('lit'));
+  document.getElementById('ms_' + k).classList.add('lit'); document.getElementById('mm_' + k).classList.add('lit');
+  speak(`I have a ${SYM[k].en}. ${MEDS[k].name}.`);
+}
+let QZ = null;
+function quizNext() {
+  const k = SYM_KEYS[Math.floor(Math.random() * SYM_KEYS.length)];
+  const f = [null, null, 'tired', 'thirsty'][Math.floor(Math.random() * 4)];
+  QZ = { k, f, step: 0 };
+  quizDraw();
+}
+function quizDraw() {
+  const { k, f, step } = QZ; const adv = adviceFor(f);
+  const ans = `I have a ${SYM[k].en}.` + (f ? ` I'm ${f}.` : '');
+  document.getElementById('quizBox').innerHTML = `
+    <div>${pic(SYM[k].kid + '_' + k, SYM[k].emoji)}</div>
+    <div>
+      <div class="big">Nurse: What's wrong?</div>
+      ${f ? `<p class="ko" style="font-size:24px">이 친구는 ${FEEL[f].emoji} ${FEEL[f].ko} 상태이기도 해요.<span class="en">This friend is ${FEEL[f].en}, too.</span></p>` : ''}
+      ${step >= 1 ? `<div class="big" style="color:var(--red)">${esc(ans)}</div>` : ''}
+      ${step >= 2 ? `<div class="row" style="margin:10px 0">${medPic(k, 'width:90px;height:100px;font-size:80px')}<b style="font-size:28px">${MEDS[k].name}</b></div>
+        <div class="big" style="font-size:32px;color:var(--teal)">${esc(nurseLine(adv))}</div>` : ''}
+      <div class="row" style="margin-top:16px">
+        <button class="ghost" onclick="speak('What\\'s wrong?')">🔊 What's wrong?</button>
+        ${step === 0 ? `<button class="red" onclick="QZ.step=1;quizDraw();speak(${esc(JSON.stringify(ans))})">정답 보기<span class="en">Show answer</span></button>` : ''}
+        ${step === 1 ? `<button onclick="QZ.step=2;quizDraw();speak(${esc(JSON.stringify(nurseLine(adv)))})">💊 약과 조언 보기<span class="en">Medicine & advice</span></button>` : ''}
+        ${step === 2 ? `<button class="sun" onclick="quizNext()">다음 친구 ▶<span class="en">Next friend</span></button>` : ''}
+      </div>
+    </div>`;
+}
+
+/* =========================================================
+   5차시 WRITING — 보건실 문진표
+   ========================================================= */
+let ME = null, W = null;
+async function writeLogin() {
+  stopTimer();
+  const last = store.get('me') || {};
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2></div>
+    <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
+      <label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${[1,2,3,4].map(c => `<option ${last.cls == c ? 'selected' : ''} value="${c}">5학년 ${c}반</option>`).join('')}</select></label>
+      <label>번호 <span class="eni">No.</span> <span id="numBox"><input id="wNo" type="number" min="1" max="99" style="width:120px"></span></label>
+      <label>비밀번호 <span class="eni">Password</span> <input id="wPin" type="password" maxlength="12" style="width:200px" onkeydown="if(event.key==='Enter')writeEnter()" autocomplete="off"></label>
+      <p class="muted" style="margin:0">처음이면 비밀번호를 비워 두고 들어가기를 눌러요. 내 비밀번호를 정할 수 있어요.<span class="en">First time? Leave it empty and press Enter to make your password.</span></p>
+      <button class="red" style="font-size:24px" onclick="writeEnter()">들어가기<span class="en">Enter</span></button>
+    </div></div>`;
+  loadNums(last.no);
+}
+async function loadNums(sel) {
+  const cls = +document.getElementById('wCls').value;
+  try {
+    const nums = parseNumbers(await rpc('hn_get_numbers', { p_class: cls }));
+    if (nums.length) document.getElementById('numBox').innerHTML = `<select id="wNo"><option value="">번호 선택 (No.)</option>${nums.map(n => `<option ${sel == n ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+    else document.getElementById('numBox').innerHTML = `<input id="wNo" type="number" min="1" max="99" style="width:120px" value="${sel || ''}">`;
+  } catch (e) {}
+}
+async function writeEnter() {
+  const cls = +document.getElementById('wCls').value, no = +document.getElementById('wNo').value;
+  const pin = document.getElementById('wPin').value.trim();
+  if (!no) { toast('번호를 골라 주세요\nChoose your number.'); return; }
+  let r = null;
+  try { r = await rpc('hn_student_login', { p_class: cls, p_no: no, p_pin: pin }); } catch (e) { return serverError(e); }
+  if (r === 'new') return pinSetup(cls, no);
+  if (r !== 'ok') { toast('비밀번호가 맞지 않아요. 잊어버렸으면 선생님께 말해요.\nWrong password. Ask your teacher if you forgot.', 3000); shakeEl('#wPin'); return; }
+  ME = { cls, no, pin, name: `${no}번` }; store.set('me', { cls, no });
+  writeHub('patient');
+}
+function pinSetup(cls, no) {
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="writeLogin()">← 돌아가기 <span class="eni">Back</span></button><h2>🔑 내 비밀번호 정하기<span class="en">Make your password</span></h2></div>
+    <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
+      <p class="ko" style="font-size:24px;margin:0">${cls}반 ${no}번, 처음 왔네요! 👋<span class="en">Class ${cls} No. ${no}, welcome!</span></p>
+      <p style="margin:0">다음부터 이 비밀번호로 들어와요. 친구에게 알려 주지 마세요! (4~12자)<span class="en">Use it next time. Keep it secret! (4-12 characters)</span></p>
+      <label>비밀번호 <span class="eni">Password</span> <input id="np1" type="password" maxlength="12" style="width:220px" autocomplete="off"></label>
+      <label>한 번 더 <span class="eni">Again</span> <input id="np2" type="password" maxlength="12" style="width:220px" autocomplete="off" onkeydown="if(event.key==='Enter')pinSave(${cls},${no})"></label>
+      <button class="red" style="font-size:24px" onclick="pinSave(${cls},${no})">🔑 정하고 들어가기<span class="en">Save and enter</span></button>
+    </div></div>`;
+  document.getElementById('np1').focus();
+}
+async function pinSave(cls, no) {
+  const a = document.getElementById('np1').value.trim(), b = document.getElementById('np2').value.trim();
+  if (a.length < 4) { toast('4자 이상으로 정해요\nUse 4 or more characters.'); return; }
+  if (a !== b) { toast('두 비밀번호가 달라요\nThe two passwords are different.'); shakeEl('#np2'); return; }
+  let r = null;
+  try { r = await rpc('hn_student_register', { p_class: cls, p_no: no, p_pin: a }); } catch (e) { return serverError(e); }
+  if (r === 'exists') { toast('이미 비밀번호가 있어요. 다시 들어가 주세요.\nThis number already has a password.', 3000); return writeLogin(); }
+  if (r !== 'ok') { toast('다시 확인해 주세요\nPlease check again.'); return; }
+  ME = { cls, no, pin: a, name: `${no}번` }; store.set('me', { cls, no });
+  toast('🔑 비밀번호를 정했어요!\nPassword saved!');
+  writeHub('patient');
+}
+function pinFail() { toast('비밀번호를 다시 입력해 주세요\nPlease enter your password again.'); writeLogin(); }
+// 레벨: 도장 수 + 스페셜 도장(한 번 더 쳐요)
+const LEVELS = [[0, '견습 보건 선생님', 'Trainee Nurse', '🩹'], [3, '새내기 보건 선생님', 'Junior Nurse', '🥉'],
+  [6, '믿음직한 보건 선생님', 'Super Nurse', '🥈'], [10, '명예 보건 선생님', 'Honor Nurse', '🥇'], [15, '전설의 보건 선생님', 'Legend Nurse', '👑']];
+let ROOM = 'patient';
+async function writeHub(room) {
+  if (room) ROOM = room;
+  let r = null;
+  try { r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }); } catch (e) { serverError(e); }
+  const mine = r && r.card, replies = (r && r.replies) || [], stamps = (r && r.stamps) || [];
+  MYCARD = mine;
+  if (ROOM === 'nurse') { try { MYREPLIES = await rpc('hn_my_replies', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }) || []; } catch (e) { MYREPLIES = []; } }
+  const tabs = `<div class="rooms">
+      <button class="${ROOM === 'patient' ? 'on' : ''}" onclick="writeHub('patient')">🤒 나는 손님<span class="en">Patient room</span>${replies.length && !replies.some(x => x.best) ? '<i class="dot"></i>' : ''}</button>
+      <button class="${ROOM === 'nurse' ? 'on' : ''}" onclick="writeHub('nurse')">👩‍⚕️ 나는 보건 선생님<span class="en">Nurse room</span></button></div>`;
+  let body = '';
+  if (ROOM === 'patient') {
+    const locked = replies.length > 0, nBest = replies.filter(x => x.best).length, left = 2 - nBest;
+    body = `<div class="hub2">
+      <div>
+        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 class="ko" style="font-size:24px;margin:0">내 문진표 <span class="eni">My form</span></h3>
+          <button class="red small" onclick="${locked ? 'editMyCard(MYCARD)' : 'guestStart()'}">${mine ? '✏️ 고치기 · Edit' : '✏️ 문진표 쓰기 · Write'}</button></div>
+        ${mine ? cardView(mine) : `<div class="panel center"><p class="ko" style="font-size:24px">아직 쓴 문진표가 없어요.<span class="en">No form yet.</span></p><button class="red" onclick="guestStart()">✏️ 문진표 쓰기<span class="en">Write a form</span></button></div>`}
+        ${locked ? '<p class="muted">답장을 받은 뒤에는 손님 이름과 문장만 고칠 수 있어요.<span class="en">After replies, you can fix the name and sentences.</span></p>' : ''}
+      </div>
+      <div>
+        <h3 class="ko" style="font-size:24px;margin:0 0 6px">받은 처방 <b style="color:var(--red)">${replies.length}</b>개 <span class="eni">Replies</span></h3>
+        ${replies.length ? `<p class="pickhint ko">${nBest === 0 ? '💖 제일 마음에 드는 처방을 골라요. 고른 친구는 <b>스페셜 도장</b>을 받아요!<span class="en">Pick your favorite reply. That nurse gets a special stamp!</span>'
+          : left > 0 ? '💖 다른 처방도 좋았나요? <b>한 번 더</b> 줄 수 있어요. 먼저 준 도장은 그대로예요!<span class="en">You can give one more. The first stays!</span>'
+          : '💖 스페셜 도장을 모두 줬어요. 고마워요!<span class="en">You gave all your special stamps.</span>'}</p>` : ''}
+        ${replies.length ? replies.map((rp, i) => `<div class="envelope rp ${rp.best ? 'best' : ''}">
+            <div class="row"><b class="ko" style="font-size:18px">보건 선생님 ${i + 1}<span class="en">Nurse ${i + 1}</span></b>
+              ${(rp.meds || []).map(k => MEDS[k] ? medPic(k, 'width:36px;height:42px;font-size:34px') : '').join('')}
+              <span style="flex:1"></span>
+              ${rp.best ? '<span class="bestmark">💖 베스트 처방 · Best</span>' : left > 0 ? `<button class="small ghost" onclick="pickBest(${rp.id}, ${left})">${left === 2 ? '💖 이게 제일 좋아요<span class="en">My favorite</span>' : '💖 하나 더 주기<span class="en">Give one more</span>'}</button>` : ''}</div>
+            <div class="lines">${(rp.lines || []).map(esc).join(' ')}</div></div>`).join('')
+          : `<div class="panel muted">${mine ? '📮 아직 답장을 기다리는 중이에요. 친구들이 곧 처방해 줄 거예요!<span class="en">Waiting for replies.</span>' : '문진표를 보내면 친구들이 답장해 줘요.<span class="en">Send a form to get replies.</span>'}</div>`}
+      </div></div>`;
+  } else {
+    const sp = stamps.filter(x => x.best).length, xp = stamps.length + sp;
+    let li = 0; LEVELS.forEach((l, i) => { if (xp >= l[0]) li = i; });
+    const L = LEVELS[li], N = LEVELS[li + 1];
+    const pct = N ? Math.round((xp - L[0]) / (N[0] - L[0]) * 100) : 100;
+    const slots = Math.max(10, Math.ceil(stamps.length / 10) * 10);
+    body = `<div class="nroom">
+      <div class="panel nr-go">
+        <div class="ko" style="font-size:28px">📬 친구 문진표가 기다리고 있어요!<span class="en">Patients are waiting!</span></div>
+        <p>문진표를 읽고 약을 고른 뒤 답장을 써요. 정성껏 쓰면 <b>💖 스페셜 도장</b>을 받을 수 있어요!<span class="en">Read, choose medicine, write a reply. Write kindly to get a special stamp!</span></p>
+        <button class="sp-go" onclick="nurseStart()">📬 손님 받기<span class="en">Get a patient</span></button>
+      </div>
+      <div class="panel level">
+        <div class="lv-top"><span class="lv-icon">${L[3]}</span><div><div class="ko lv-name">Lv.${li + 1} ${L[1]}</div><div class="eni">${L[2]}</div></div>
+          <div class="lv-xp"><b>${xp}</b> 점<span class="en">points</span></div></div>
+        <div class="lv-bar"><div style="width:${pct}%"></div></div>
+        <p class="muted" style="margin:6px 0 0">${N ? `${N[0] - xp}점 더 모으면 ${N[3]} Lv.${li + 2} ${N[1]}!<span class="en">${N[0] - xp} more points to ${N[2]}!</span>` : '최고 레벨이에요! · Max level!'}</p>
+        <p class="muted" style="margin:2px 0 0;font-size:15px">처방 1개 = 1점, 💖 스페셜 도장 = 1점 더 <span class="eni">Reply 1 pt · Special +1 pt</span></p>
+      </div>
+      <div class="panel stampbox">
+        <h3 class="ko" style="margin:0">💉 내 치료 도장 <b style="color:var(--red)">${stamps.length}</b>개 · 💖 스페셜 <b style="color:var(--red)">${sp}</b>개<span class="en">Stamps ${stamps.length} · Special ${sp}</span></h3>
+        <div class="stamps">${Array.from({ length: slots }, (_, i) => stamps[i]
+          ? `<span class="st ${stamps[i].best ? 'best' : ''}">${pic(avImg(stamps[i].avatar, 'happy'), avEmoji(stamps[i].avatar))}${stamps[i].best ? '<i>💖</i>' : ''}</span>` : '<span class="st empty">✚</span>').join('')}</div>
+      </div>
+      ${MYREPLIES.length ? `<div class="panel myreps"><h3 class="ko" style="margin:0 0 8px">📝 내가 쓴 처방 <span class="eni">My replies</span></h3>
+        ${MYREPLIES.map((rp, i) => `<div class="myrep">${pic(avImg(rp.avatar, 'happy'), avEmoji(rp.avatar))}<div><b class="ko">${esc(rp.guest_name || '')}에게 ${rp.best ? '💖' : ''}</b><div>${(rp.lines || []).map(esc).join(' ')}</div></div>
+          <button class="small ghost" onclick="editMyReply(MYREPLIES[${i}])">✏️ 고치기<span class="en">Edit</span></button></div>`).join('')}</div>` : ''}
+      </div>`;
+  }
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2><span class="muted">${ME.cls}반 ${ME.no}번 · Class ${ME.cls} No. ${ME.no}</span></div>
+    ${tabs}${body}</div>`;
+}
+/* ---- 자동 저장 (이 컴퓨터에 학생별로) ---- */
+const dkey = kind => `hn_draft_${kind}_${ME.cls}_${ME.no}`;
+function draftSave(kind, data) { try { localStorage.setItem(dkey(kind), JSON.stringify({ t: Date.now(), data })); } catch (e) {} }
+function draftLoad(kind, maxH = 72) { try { const v = JSON.parse(localStorage.getItem(dkey(kind))); return v && Date.now() - v.t < maxH * 3600e3 ? v.data : null; } catch (e) { return null; } }
+function draftClear(kind) { try { localStorage.removeItem(dkey(kind)); } catch (e) {} }
+const wSave = () => { if (W) draftSave('form', { ...W }); };
+const nrSave = () => { if (NR) draftSave('reply', { id: NR.card.id, sel: [...NR.sel], step: NR.step, lines: NR.lines }); };
+
+/* ---- 글 고치기 창 (학생·교사 공용) ---- */
+function lineEditor(title, guest, lines, onSave) {
+  const d = document.createElement('div'); d.className = 'banner';
+  d.innerHTML = `<div class="card editor"><h2>${title}</h2>
+    ${guest !== null ? `<label class="ed-row"><span class="ko">손님 이름 <span class="eni">Name</span></span><input id="edG" maxlength="15" value="${esc(guest)}" autocomplete="off" spellcheck="false"></label>` : ''}
+    ${lines.map((l, i) => `<label class="ed-row"><span class="ko">문장 ${i + 1}</span><input class="edL" maxlength="80" value="${esc(l)}" autocomplete="off" spellcheck="false"></label>`).join('')}
+    <p class="muted" style="font-size:15px;margin:6px 0 0">틀린 단어나 문장을 고쳐요. 빈칸으로 두면 그 문장은 빠져요.<span class="en">Fix words or sentences. Empty lines are removed.</span></p>
+    <div class="row" style="justify-content:center;margin-top:12px"><button class="ghost" data-x>취소<span class="en">Cancel</span></button><button class="red" data-ok>저장<span class="en">Save</span></button></div></div>`;
+  document.body.appendChild(d);
+  d.querySelector('[data-x]').onclick = () => d.remove();
+  d.querySelector('[data-ok]').onclick = async () => {
+    const g = guest !== null ? d.querySelector('#edG').value.trim() : null;
+    const ls = [...d.querySelectorAll('.edL')].map(e => e.value.trim()).filter(Boolean);
+    if (guest !== null && !/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(g)) return toast('손님 이름은 영어로 써요\nWrite the name in English.');
+    if (!ls.length) return toast('문장이 하나는 있어야 해요\nKeep at least one sentence.');
+    if (ls.some(l => !/^[A-Za-z0-9 ,.'!?-]+$/.test(l))) return toast('영어로만 써요\nEnglish only, please.');
+    if (await onSave(g, ls.map(tidy)) !== false) d.remove();
+  };
+}
+function editMyCard(card) {
+  const rest = (card.card_lines || []).slice(1);
+  lineEditor('✏️ 내 문진표 고치기 <span class="eni">Edit my form</span>', card.guest_name || '', rest, async (g, ls) => {
+    const lines = [`Hello, I'm ${g.replace(/\b[a-z]/g, c => c.toUpperCase())}.`, ...ls];
+    const r = await rpc('hn_edit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_guest: g.replace(/\b[a-z]/g, c => c.toUpperCase()), p_lines: lines });
+    if (r === 'pin') { pinFail(); return; }
+    if (r !== 'ok') { toast('다시 해 주세요\nPlease try again.'); return false; }
+    toast('고쳤어요!\nSaved!'); writeHub('patient');
+  });
+}
+function editMyReply(rp) {
+  lineEditor('✏️ 내 처방 고치기 <span class="eni">Edit my reply</span>', null, rp.lines || [], async (g, ls) => {
+    const r = await rpc('hn_edit_reply', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_reply: rp.id, p_lines: ls });
+    if (r === 'pin') { pinFail(); return; }
+    if (r !== 'ok') { toast('다시 해 주세요\nPlease try again.'); return false; }
+    toast('고쳤어요!\nSaved!'); writeHub('nurse');
+  });
+}
+let MYCARD = null, MYREPLIES = [];
+function pickBest(id, left) {
+  uiConfirm(left === 2 ? '이 처방에 💖 스페셜 도장을 줄까요? 준 도장은 다시 가져올 수 없어요.\nGive a special stamp? You can\'t take it back.'
+    : '마지막 💖 하나를 이 처방에 줄까요? 이번이 마지막이에요.\nGive your last special stamp?', () => pickBestGo(id));
+}
+async function pickBestGo(id) {
+  try {
+    const r = await rpc('hn_pick_best', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_reply: id });
+    if (r === 'pin') return pinFail();
+    if (r === 'ok') { sfx('ok'); toast('💖 스페셜 도장을 줬어요!\nYou gave a special stamp!'); }
+    if (r === 'limit') toast('💖 는 2개까지 줄 수 있어요\nUp to 2 special stamps.');
+  } catch (e) { return serverError(e); }
+  writeHub('patient');
+}
+function cardView(c) {
+  const lines = (c.card_lines || []).map(l => `<div>${esc(l)}</div>`).join('');
+  return `<div class="card5"><span class="tag">문진표 · Patient Form</span>
+    <div class="head">${pic(avImg(c.avatar, 'happy'), avEmoji(c.avatar))}<div class="lines">${lines}</div></div></div>`;
+}
+
+/* ---- ① guest card ---- */
+async function guestStart() {
+  let mine = null;
+  try { const r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }); mine = r && r.card; } catch (e) {}
+  W = { step: 0, avatar: mine?.avatar || null, guest: mine?.guest_name || '', sym: mine?.symptoms || [], feel: mine?.feel || '', extras: (mine?.extra || '').split('\n').concat(['', '']).slice(0, 2), typed: {} };
+  const d = draftLoad('form');
+  if (d && d.step != null) { W = { ...W, ...d }; toast('💾 쓰던 문진표를 불러왔어요\nYour draft is back!'); }
+  guestDraw();
+}
+function guestTargets() {
+  const t = [];
+  W.sym.forEach((s, i) => t.push({ id: 's' + i, want: [`i have a ${SYM[s].en}`, `i have a ${SYM[s].en} too`],
+    hint: i ? `I have a ${SYM[s].en}, too.` : `I have a ${SYM[s].en}.`, keys: SYM[s].en.split(' '),
+    cue: `${SYM[s].emoji} ${SYM[s].ko}` }));
+  if (W.feel) t.push({ id: 'f', want: [`i'm ${W.feel}`, `i'm ${W.feel} too`, `i'm very ${W.feel}`], hint: `I'm ${W.feel}.`, keys: [W.feel],
+    cue: `${FEEL[W.feel].emoji} ${FEEL[W.feel].ko}` });
+  return t;
+}
+// 힌트: 정답 문장을 통째로 보여 주지 않고, 핵심 단어만 빈칸 → 첫 글자 순서로
+function blankHint(sentence, keys, level) {
+  return sentence.split(' ').map(w => {
+    const core = w.replace(/[^A-Za-z']/g, ''), tail = w.slice(core.length);
+    if (!keys.some(k => k.toLowerCase() === core.toLowerCase())) return w;
+    return (level >= 2 ? core[0] + '_'.repeat(core.length - 1) : '_'.repeat(core.length)) + tail;
+  }).join(' ');
+}
+function hintStep(btn, sentence, keys) {
+  const box = btn.nextElementSibling;
+  const lv = Math.min(2, (+btn.dataset.lv || 0) + 1); btn.dataset.lv = lv;
+  box.textContent = blankHint(sentence, keys, lv);
+  box.style.visibility = 'visible';
+  if (lv >= 2) btn.disabled = true;
+}
+function guestDraw() {
+  wSave();
+  const s = W.step;
+  let body = '';
+  if (s === 0) {
+    body = `<h3 class="ko" style="font-size:26px;margin-top:0">누가 보건실에 갈까요?<span class="en">Who goes to the nurse's office?</span></h3>
+      <div class="avatars">${AVATARS.map(a => `<button class="av ${W.avatar === a.id ? 'sel' : ''}" onclick="W.avatar='${a.id}';guestDraw()">${pic(avImg(a.id, 'happy'), a.emoji)}</button>`).join('')}</div>
+      <p style="margin-top:18px">손님 이름 <span class="eni">Patient's name (English)</span> &nbsp; <b>Hello, I'm</b> <input id="gName" maxlength="15" value="${esc(W.guest)}" placeholder="Minho / Snowy" style="width:220px"> <b>.</b></p>
+      <p class="muted">내 영어 이름도 좋고, 엉뚱한 손님 이름도 좋아요.<span class="en">Use your English name or a funny name.</span></p>`;
+  } else if (s === 1) {
+    body = `<h3 class="ko" style="font-size:26px;margin-top:0">어디가 아픈가요? (1~4개)<span class="en">What's wrong? (Choose 1 to 4)</span></h3>
+      <div class="syms">${SYM_KEYS.map(k => `<button class="symbtn ${W.sym.includes(k) ? 'sel' : ''}" onclick="symTap('${k}')"><span class="e">${SYM[k].emoji}</span>${SYM[k].en}<span class="ko" style="font-size:15px">${SYM[k].ko}</span></button>`).join('')}</div>
+      <h3 class="ko" style="font-size:24px">기분은 어때요? (선택)<span class="en">How do you feel? (Optional)</span></h3>
+      <div class="row">${[['', '🙂 없음 · None'], ['tired', '🥱 tired 피곤해요'], ['thirsty', '🥵 thirsty 목말라요']].map(f => `<button class="${W.feel === f[0] ? '' : 'ghost'}" onclick="W.feel='${f[0]}';guestDraw()">${f[1]}</button>`).join('')}</div>`;
+  } else if (s === 2) {
+    const T = guestTargets();
+    body = `<h3 class="ko" style="font-size:26px;margin-top:0">손님의 말을 영어로 써요<span class="en">Write what the patient says.</span></h3>
+      <div class="picked"><span class="ko">내가 고른 것 <span class="eni">My choices</span></span>
+        ${pic(avImg(W.avatar, 'happy'), avEmoji(W.avatar))}
+        ${T.map(t => `<span class="chipk">${t.cue}</span>`).join('')}</div>
+      <div class="wordbox"><span class="ko">단어 상자 <span class="eni">Word box</span></span>
+        ${shuffle([...SYM_KEYS.map(k => SYM[k].en), 'tired', 'thirsty']).map(w => `<span>${w}</span>`).join('')}</div>
+      <div class="wline"><span class="ok">✅</span><b style="font-size:22px">Hello, I'm ${esc(W.guest)}.</b></div>
+      ${T.map(t => `<div class="wline"><span class="ok" id="ok_${t.id}">✏️</span><span class="cue">${t.cue}</span><input id="in_${t.id}" value="${esc(W.typed[t.id] || '')}" oninput="checkLine('${t.id}')" autocomplete="off" spellcheck="false" placeholder="${esc(t.id === 'f' ? "I'm ..." : 'I have a ...')}">
+        <button class="small ghost" title="힌트 · Hint" onclick='hintStep(this, ${esc(JSON.stringify(t.hint))}, ${esc(JSON.stringify(t.keys))})'>💡</button><span class="hint" style="visibility:hidden"></span></div>`).join('')}
+      <p class="muted" style="font-size:15px;margin:2px 0 0">💡를 누르면 빈칸 힌트, 한 번 더 누르면 첫 글자 힌트가 나와요. <span class="eni">Tap 💡 for blanks, again for first letters.</span></p>
+      <h3 class="ko" style="font-size:22px">더 하고 싶은 말 (선택, 2개까지)<span class="en">More to say (Optional, up to 2)</span></h3>
+      <p class="muted" style="margin:0 0 6px">아래 문장 창고에서 찾아보고 직접 써요. 단어를 바꿔 써도 좋아요! (pizza → chicken)<span class="en">Find a sentence below and type it. You can change words!</span></p>
+      ${[0, 1].map(i => `<div class="wline"><span class="ok" id="ok_x${i}">💬</span><input id="in_x${i}" maxlength="60" value="${esc(W.extras[i] || '')}" placeholder="${i ? 'Can I lie down?' : 'I ate too much pizza.'}" onfocus="BANK_TARGET=this.id" oninput="xCheck(${i})" autocomplete="off" spellcheck="false"></div>`).join('')}
+      <div id="copyGuide" class="copy-guide" hidden></div>
+      ${bankHTML('bankP', BANK_PATIENT)}`;
+  } else {
+    body = `<h3 class="ko" style="font-size:26px;margin-top:0">완성! 이렇게 보내요<span class="en">Done! Check your form.</span></h3>${cardView(guestCard())}
+      <p class="muted">보내면 우리 반 친구에게 무작위로 배달돼요.<span class="en">It goes to a random friend in your class.</span></p>`;
+  }
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="writeHub('patient')">← 돌아가기 <span class="eni">Back</span></button><h2>① 나는 손님<span class="en">I'm a patient</span></h2></div>
+    <div class="panel" style="max-width:1000px;margin:0 auto">
+      <div class="stepper">${[0,1,2,3].map(i => `<span class="${i <= s ? 'on' : ''}"></span>`).join('')}</div>
+      ${body}
+      <div class="row" style="margin-top:18px;justify-content:space-between">
+        <button class="ghost" onclick="guestBack()" ${s === 0 ? 'disabled' : ''}>← 이전<span class="en">Back</span></button>
+        ${s < 3 ? `<button onclick="guestNext()">다음 →<span class="en">Next</span></button>` : `<button class="red" onclick="guestSend()">✉️ 보건실로 보내기<span class="en">Send</span></button>`}
+      </div></div></div>`;
+  if (s === 2) guestTargets().forEach(t => checkLine(t.id));
+}
+function symTap(k) {
+  if (W.sym.includes(k)) W.sym = W.sym.filter(x => x !== k);
+  else { if (W.sym.length >= 4) { toast('아픈 곳은 4개까지!\nUp to 4.'); return; } W.sym.push(k); }
+  W.typed = {}; guestDraw();
+}
+function xCheck(i) {
+  const e = document.getElementById('in_x' + i); W.extras[i] = e.value; wSave();
+  document.getElementById('ok_x' + i).textContent = !e.value.trim() ? '💬' : engOK(e.value) ? '✅' : '✏️';
+}
+function checkLine(id) {
+  const t = guestTargets().find(x => x.id === id), el = document.getElementById('in_' + id);
+  W.typed[id] = el.value; wSave();
+  const ok = t.want.includes(norm(el.value));
+  document.getElementById('ok_' + id).textContent = ok ? '✅' : '✏️';
+  return ok;
+}
+function saveStepInputs() {
+  if (W.step === 0) { const e = document.getElementById('gName'); if (e) W.guest = e.value.trim(); }
+  if (W.step === 2) { [0, 1].forEach(i => { const x = document.getElementById('in_x' + i); if (x) W.extras[i] = x.value.trim(); }); guestTargets().forEach(t => { const e = document.getElementById('in_' + t.id); if (e) W.typed[t.id] = e.value; }); }
+}
+function guestBack() { saveStepInputs(); W.step--; guestDraw(); }
+function guestNext() {
+  saveStepInputs();
+  if (W.step === 0) {
+    if (!W.avatar) return toast('손님 그림을 골라 주세요\nChoose a picture.');
+    if (!/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(W.guest)) return toast('손님 이름을 영어로 써 주세요\nWrite the name in English.');
+    W.guest = W.guest.replace(/\b[a-z]/g, c => c.toUpperCase());
+  }
+  if (W.step === 1 && !W.sym.length) return toast('아픈 곳을 골라 주세요\nChoose what\'s wrong.');
+  if (W.step === 2) {
+    const bad = guestTargets().filter(t => !t.want.includes(norm(W.typed[t.id])));
+    if (bad.length) { toast('✏️ 표시된 문장을 다시 확인해요\nCheck the ✏️ sentences.'); bad.forEach(t => shakeEl('#in_' + t.id)); return; }
+    if (W.extras.some(x => x && !engOK(x))) return toast('더 하고 싶은 말은 영어 문장으로 써요\nWrite an English sentence, please.');
+  }
+  W.step++; guestDraw();
+}
+function guestCard() {
+  const T = guestTargets();
+  const lines = [`Hello, I'm ${W.guest}.`, ...T.map(t => tidy(W.typed[t.id]))];
+  const ex = W.extras.filter(Boolean).map(tidy);
+  lines.push(...ex);
+  return { avatar: W.avatar, guest_name: W.guest, symptoms: W.sym, feel: W.feel || null, extra: ex.length ? ex.join('\n') : null, card_lines: lines };
+}
+async function guestSend() {
+  const c = guestCard();
+  try {
+    const r = await rpc('hn_submit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_name: ME.name, p_avatar: c.avatar, p_guest: c.guest_name,
+      p_symptoms: c.symptoms, p_feel: c.feel, p_extra: c.extra, p_lines: c.card_lines });
+    if (r === 'ok') { draftClear('form'); toast('✉️ 보건실로 보냈어요!\nSent!'); writeHub('patient'); }
+    else if (r === 'pin') pinFail();
+    else if (r === 'locked') toast('이미 답장을 받은 문진표예요\nThis form already has a reply.');
+    else toast('다시 확인해 주세요\nPlease check again.');
+  } catch (e) { serverError(e); }
+}
+
+/* ---- ② nurse reply ---- */
+let NR = null;
+async function nurseStart() {
+  let c = null;
+  try { c = await rpc('hn_get_delivery', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_name: ME.name }); } catch (e) { return serverError(e); }
+  if (!c) {
+    $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="writeHub('nurse')">← 돌아가기 <span class="eni">Back</span></button><h2>② 나는 보건 선생님<span class="en">I'm a nurse</span></h2></div>
+      <div class="panel center" style="padding:50px"><p class="ko" style="font-size:30px">📭 아직 배달할 문진표가 없어요.<span class="en">No patient forms yet.</span></p>
+      <p>친구들이 문진표를 보내면 다시 눌러 보세요.<span class="en">Try again after your friends send forms.</span></p><button onclick="nurseStart()">다시 받기<span class="en">Try again</span></button></div></div>`;
+    return;
+  }
+  NR = { card: c, step: 'meds', sel: new Set(), lines: null, msg: '' };
+  const d = draftLoad('reply', 1);
+  if (d && d.id === c.id) { NR.sel = new Set(d.sel || []); NR.step = d.step || 'meds'; NR.lines = d.lines || null; toast('💾 쓰던 처방을 불러왔어요\nYour draft is back!'); }
+  nurseDraw();
+}
+function nurseDraw() {
+  const c = NR.card, w = NR.step === 'write';
+  const tips = nurseTips(c.card_lines);
+  const L = NR.lines || (NR.lines = ['', '', '', '']);
+  const row = (i, label, en, ph, must) => `<div class="rrow"><div class="rlabel"><span class="ko">${label}</span><span class="eni">${en}</span></div>
+    <div class="wline"><span class="ok" id="okr${i}">${must ? '✏️' : '💬'}</span><input id="r${i}" value="${esc(L[i])}" maxlength="60" placeholder="${esc(ph)}" oninput="nrCheck()" onfocus="BANK_TARGET=this.id" autocomplete="off" spellcheck="false" ${w ? '' : 'disabled'}></div></div>`;
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="writeHub('nurse')">← 돌아가기 <span class="eni">Back</span></button><h2>② 나는 보건 선생님<span class="en">I'm a nurse</span></h2></div>
+    <div class="nurse2">
+      <div class="nleft">
+        ${cardView(c)}
+        <div class="box ${w ? 'done' : ''}">
+          <h3><span class="step">1</span><span>문진표를 읽고 약 고르기<span class="en">Read and choose medicine</span></span>${w ? '<span class="okmark">✅</span>' : ''}</h3>
+          <div class="cabinet">${SYM_KEYS.map(k => `<button class="medbtn ${NR.sel.has(k) ? 'sel' : ''}" onclick="nrMed('${k}')" ${w ? 'disabled' : ''}>${medPic(k)}${MEDS[k].name}</button>`).join('')}</div>
+          ${w ? '' : `<button style="margin-top:10px" onclick="nrGive()" ${NR.sel.size ? '' : 'disabled'}>💊 이 약으로 할게요<span class="en">Give this medicine</span></button>`}
+          ${NR.msg ? `<div class="nmsg">${esc(NR.msg)}</div>` : ''}
+        </div>
+      </div>
+      <div class="nright ${w ? '' : 'wait'}">
+        <div class="box envelope">
+          <h3 style="margin-top:6px"><span class="step">2</span><span>처방 봉투에 답장 쓰기<span class="en">Write your reply</span></span></h3>
+          ${w ? '' : '<div class="nwait ko">← 먼저 약을 골라요<span class="en">Choose medicine first</span></div>'}
+          ${row(0, '① 위로해요', 'Comfort', "That's ___ ___.", 1)}
+          ${row(1, '② 약을 줘요', 'Give medicine', 'Take ____ ________.', 1)}
+          ${row(2, '③ 조언해요 (꼭)', 'Advice (must)', 'Get some rest.', 1)}
+          ${row(3, '④ 더 해 줄 말 (선택)', 'More (optional)', tips[0] ? tips[0][0] : 'Get well soon.', 0)}
+          <div id="copyGuide" class="copy-guide" hidden></div>
+          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="muted" style="font-size:14px">💾 쓰는 글은 자동 저장돼요 · Auto-saved</span><button class="red" onclick="nrSend()" ${w ? '' : 'disabled'}>📨 답장 보내기<span class="en">Send reply</span></button></div>
+        </div>
+        ${w ? bankHTML('bankN', BANK_NURSE, tips) : ''}
+      </div>
+    </div></div>`;
+  if (w) { nrCheck(); const e = document.getElementById('r0'); if (e && !L[0]) e.focus(); }
+}
+function nrMed(k) { if (NR.step !== 'meds') return; NR.sel.has(k) ? NR.sel.delete(k) : (NR.sel.size < 4 ? NR.sel.add(k) : toast('약은 4개까지!\nUp to 4 medicines.')); nurseDraw(); }
+function nrGive() {
+  const need = NR.card.symptoms || [];
+  if (NR.sel.size === need.length && need.every(s => NR.sel.has(s))) { NR.step = 'write'; NR.msg = ''; nrSave(); }
+  else { NR.sel = new Set(); NR.msg = '음… 문진표를 다시 읽어 볼까요? 📖 · Hmm… read the form again.'; }
+  nurseDraw(); if (NR.msg) shakeEl('.cabinet');
+}
+function nrCheck() {
+  const v = [0, 1, 2, 3].map(i => { const e = document.getElementById('r' + i); return e ? e.value : ''; });
+  NR.lines = v; nrSave();
+  const ok = [norm(v[0]) === "that's too bad", norm(v[1]) === 'take this medicine', engOK(v[2]), !v[3].trim() || engOK(v[3])];
+  ok.forEach((o, i) => { const e = document.getElementById('okr' + i); if (e) e.textContent = i === 3 && !v[3].trim() ? '💬' : o ? '✅' : '✏️'; });
+  return ok.every(Boolean);
+}
+async function nrSend() {
+  if (!nrCheck()) { toast('✏️ 표시된 문장을 다시 확인해요\nCheck the ✏️ sentences.'); return; }
+  try {
+    const r = await rpc('hn_submit_reply', { p_pin: ME.pin, p_card: NR.card.id, p_class: ME.cls, p_no: ME.no, p_name: ME.name,
+      p_meds: [...NR.sel], p_advice: 'free', p_lines: NR.lines.filter(x => x.trim()).map(tidy) });
+    NR.lines = null;
+    if (r === 'pin') return pinFail();
+    draftClear('reply');
+    if (r !== 'ok') { toast('이미 다른 친구가 답장한 문진표예요\nAnother friend already replied.'); return writeHub(); }
+  } catch (e) { return serverError(e); }
+  $app.innerHTML = `<div class="wrap"><div class="panel center" style="max-width:640px;margin:60px auto">
+    ${pic(avImg(NR.card.avatar, 'happy'), '😊', '', 'width:200px;height:200px;font-size:150px')}
+    <p class="big">Thank you!</p><p class="ko" style="font-size:24px">${esc(NR.card.guest_name)}이(가) 다 나았어요. 💉 치료 도장 +1!<span class="en">${esc(NR.card.guest_name)} feels better now. +1 stamp!</span></p>
+    <div class="row" style="justify-content:center"><button onclick="nurseStart()">📬 다른 손님 받기<span class="en">Next patient</span></button><button class="ghost" onclick="writeHub('nurse')">내 도장 보기<span class="en">My stamps</span></button></div>
+  </div></div>`;
+}
+
+/* =========================================================
+   TEACHER
+   ========================================================= */
+let TPW = null, TCLS = 1, TD = null, TTAB = 'students', GROUP_BASE = 4, GROUPS = null;
+try { TPW = sessionStorage.getItem('hn_tpw'); } catch (e) {}
+async function teacher() {
+  stopTimer();
+  if (TPW) return teacherMain();
+  let has = true;
+  try { has = await rpc('hn_has_pw'); } catch (e) { return serverError(e); }
+  $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🗂️ 교사 모드<span class="en">Teacher</span></h2></div>
+    <div class="panel" style="max-width:480px;margin:40px auto;display:grid;gap:12px">
+      <p style="margin:0">${has ? '교사 비밀번호를 입력하세요.<span class="en">Enter the teacher password.</span>' : '처음 사용하시네요. 교사 비밀번호를 정해 주세요 (4자 이상).<span class="en">First time? Set a password (4+ characters).</span>'}</p>
+      <input id="tpw" type="password" onkeydown="if(event.key==='Enter')tLogin(${!has})">
+      <button onclick="tLogin(${!has})">${has ? '들어가기<span class="en">Enter</span>' : '비밀번호 정하기<span class="en">Set password</span>'}</button></div></div>`;
+  document.getElementById('tpw').focus();
+}
+async function tLogin(setup) {
+  const pw = document.getElementById('tpw').value;
+  try {
+    const ok = setup ? await rpc('hn_setup_pw', { p_new: pw }) : await rpc('hn_teacher_login', { p_pw: pw });
+    if (!ok) return toast(setup ? '4자 이상으로 정해 주세요\nUse 4+ characters.' : '비밀번호가 맞지 않아요\nWrong password.');
+    TPW = pw; try { sessionStorage.setItem('hn_tpw', pw); } catch (e) {}
+    teacherMain();
+  } catch (e) { serverError(e); }
+}
+async function teacherMain() {
+  try { TD = await rpc('hn_teacher_data', { p_pw: TPW, p_class: TCLS }); } catch (e) { return serverError(e); }
+  if (!TD) { TPW = null; try { sessionStorage.removeItem('hn_tpw'); } catch (e) {} return teacher(); }
+  if (TTAB === 'report') { try { TREP = await rpc('hn_teacher_report', { p_pw: TPW, p_class: TCLS }) || []; } catch (e) { TREP = []; } }
+  if (TTAB === 'students') { try { TSTU = await rpc('hn_teacher_students', { p_pw: TPW, p_class: TCLS }) || []; } catch (e) { TSTU = []; } }
+  const cards = TD.cards || [], scores = TD.scores || [];
+  cards.forEach(c => { c.replies = c.replies || []; });
+  const replied = TD.replies_total != null ? TD.replies_total : cards.reduce((n, c) => n + c.replies.length, 0);
+  let body = '';
+  if (TTAB === 'cards') {
+    body = `<table><tr><th>번호<span class="en">No.</span></th><th>문진표<span class="en">Patient form</span></th><th>보건 선생님 답장<span class="en">Nurse reply</span></th><th>상태<span class="en">Status</span></th><th></th></tr>
+      ${cards.map(c => `<tr>
+        <td>${c.student_no}</td>
+        <td>${c.guest_name ? `<b>${esc(c.guest_name)}</b><br>` : ''}${(c.card_lines || []).map(esc).join('<br>')}<br><button class="small ghost" onclick="tEditCard('${c.id}')">✏️ 고치기 · Edit</button></td>
+        <td>${c.replies.length ? c.replies.map(r => `<div class="trep">${r.best ? '💖 ' : ''}<b>${r.reply_no}번</b> ${(r.lines || []).map(esc).join(' ')} <button class="small ghost" onclick="tEditReply(${r.id})">✏️</button><button class="small ghost" onclick="uiConfirm('이 답장을 지울까요?\\nDelete this reply?',()=>tDelReply(${r.id}))">✕</button></div>`).join('') : '<span class="muted">대기 · Waiting</span>'}</td>
+        <td>${c.hidden ? '<span class="pill r">숨김 · Hidden</span>' : ''}</td>
+        <td style="white-space:nowrap">
+          <button class="small ghost" onclick="tAct('${c.id}','${c.hidden ? 'unhide' : 'hide'}')">${c.hidden ? '보이기 · Show' : '숨기기 · Hide'}</button>
+          ${c.replies.length ? `<button class="small ghost" onclick="uiConfirm('답장을 모두 지울까요?\\nDelete all replies?',()=>tAct('${c.id}','clear_reply'))">답장 모두 지우기 · Clear</button>` : ''}
+          <button class="small red" onclick="uiConfirm('이 문진표를 삭제할까요?\\nDelete this form?',()=>tAct('${c.id}','delete'))">삭제 · Delete</button></td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">아직 제출한 문진표가 없어요. · No forms yet.</td></tr>'}</table>`;
+  } else if (TTAB === 'students') {
+    body = studentsTab();
+  } else if (TTAB === 'report') {
+    body = reportTab();
+  } else if (TTAB === 'goal') {
+    body = `<p style="font-size:20px">우리 반 친구들이 쓴 처방(답장) 수를 큰 게이지로 보여 줘요. 목표를 정하고 전자칠판에 띄워 주세요.<span class="en">Show how many replies your class wrote on the board.</span></p>
+      <p class="ko" style="font-size:24px">지금 ${TCLS}반 처방 <b style="color:var(--red)">${replied}</b>개</p>
+      <button class="sun" onclick="goalScreen(${TCLS})">🎯 전자칠판에 띄우기<span class="en">Show on the board</span></button>`;
+  } else if (TTAB === 'scores') {
+    body = `<table><tr><th>짝</th><th>점수</th><th>치료</th><th>시간</th></tr>
+      ${scores.map(s => `<tr><td>${esc(s.names)}</td><td>${s.score}</td><td>${s.cured}/${s.total}</td><td>${new Date(s.created_at).toLocaleString('ko-KR')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">기록 없음</td></tr>'}</table>
+      <button class="small red" style="margin-top:10px" onclick="uiConfirm('${TCLS}반 게임 기록을 모두 지울까요?',tClearScores)">${TCLS}반 기록 지우기</button>`;
+  } else if (TTAB === 'script') {
+    body = scriptTab(cards);
+  } else if (TTAB === 'set') {
+    body = `<p>학생 번호 (범위는 - , 여러 개는 쉼표). 예: <b>1-15, 51-60</b><span class="en">Student numbers (use - for ranges, commas between). e.g. 1-15, 51-60</span></p>
+      <div class="row"><input id="nums" style="flex:1" value="${esc(TD.numbers || '')}"><button onclick="tSaveNums()">저장<span class="en">Save</span></button></div>
+      <p class="muted">비워 두면 학생이 번호를 직접 입력해요.<span class="en">Leave empty to let students type their number.</span></p>
+      <h3 class="ko">교사 비밀번호 바꾸기 <span class="eni">Change teacher password</span></h3>
+      <div class="row"><input id="npw" type="password" placeholder="새 비밀번호 · New password"><button class="ghost" onclick="tChangePw()">바꾸기<span class="en">Change</span></button>
+      <button class="ghost" onclick="TPW=null;try{sessionStorage.removeItem('hn_tpw')}catch(e){};home()">로그아웃<span class="en">Log out</span></button></div>`;
+  }
+  $app.innerHTML = `<div class="wrap">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🗂️ 교사 모드<span class="en">Teacher</span></h2>
+      <div class="tabs">${[1,2,3,4].map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
+    <div class="panel">
+      <div class="row" style="margin-bottom:12px;justify-content:space-between">
+        <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['set', '설정<span class="en">Settings</span>']]
+          .map(t => `<button class="${TTAB === t[0] ? 'on' : ''}" onclick="TTAB='${t[0]}';teacherMain()">${t[1]}</button>`).join('')}</div>
+        <button class="small ghost" onclick="teacherMain()">🔄 새로고침 · Refresh</button>
+      </div>${body}</div></div>`;
+}
+let TSTU = null, TREP = [], TCOM = {};
+function tFindCard(id) { return (TD.cards || []).find(c => c.id === id); }
+function tFindReply(id) { for (const c of TD.cards || []) { const r = (c.replies || []).find(x => x.id === id); if (r) return r; } return null; }
+function tEditCard(id) {
+  const c = tFindCard(id); if (!c) return;
+  lineEditor(`✏️ ${c.student_no}번 문진표 고치기`, c.guest_name || '', (c.card_lines || []).slice(1), async (g, ls) => {
+    const G = g.replace(/\b[a-z]/g, x => x.toUpperCase());
+    const ok = await rpc('hn_teacher_edit_card', { p_pw: TPW, p_card: id, p_guest: G, p_lines: [`Hello, I'm ${G}.`, ...ls] });
+    if (!ok) { toast('다시 해 주세요\nPlease try again.'); return false; }
+    toast('고쳤어요\nSaved.'); teacherMain();
+  });
+}
+function tEditReply(id) {
+  const r = tFindReply(id); if (!r) return;
+  lineEditor(`✏️ ${r.reply_no}번이 쓴 처방 고치기`, null, r.lines || [], async (g, ls) => {
+    const ok = await rpc('hn_teacher_edit_reply', { p_pw: TPW, p_reply: id, p_lines: ls });
+    if (!ok) { toast('다시 해 주세요\nPlease try again.'); return false; }
+    toast('고쳤어요\nSaved.'); teacherMain();
+  });
+}
+
+/* ---- 성적표 문구 (학생 쓰기 내용을 바탕으로 자동 작성, ~함/~임/~됨) ---- */
+const pickV = (arr, seed) => arr[Math.abs(seed) % arr.length];
+function makeComment(x) {
+  const no = x.no, card = x.card, W = x.written || [];
+  const out = [];
+  if (card) {
+    const lines = card.lines || [], syms = (card.symptoms || []).filter(k => SYM[k]);
+    const symTxt = syms.map(k => SYM[k].en).join(', ');
+    const extras = (card.extra || '').split('\n').filter(Boolean);
+    if (syms.length >= 2) out.push(pickV([
+      `'I have a ~.' 표현을 사용하여 ${symTxt} 등 여러 가지 아픈 증상을 정확한 문장으로 씀.`,
+      `자신의 몸 상태를 'I have a ~.'로 나타내며 ${syms.length}가지 증상을 빠짐없이 영어 문장으로 표현함.`], no));
+    else if (syms.length === 1) out.push(pickV([
+      `'I have a ${SYM[syms[0]].en}.'와 같이 아픈 곳을 묻고 답하는 표현을 정확하게 씀.`,
+      `아픈 증상을 'I have a ~.' 표현을 사용하여 바르게 문장으로 씀.`], no));
+    if (extras.length) out.push(pickV([
+      `'${extras[0]}'처럼 아픈 이유를 덧붙여 자신의 상황을 구체적으로 표현함.`,
+      `아픈 까닭을 '${extras[0]}'와 같이 스스로 찾아 써 문진표 내용을 풍부하게 꾸밈.`], no + 1));
+    else if (card.feel) out.push(`'I'm ${card.feel}.'와 같이 상태를 나타내는 표현도 알맞게 사용함.`);
+  } else out.push('아픈 곳을 영어 문장으로 표현하는 쓰기 활동에서 꾸준한 연습이 필요함.');
+  const n = W.length, best = W.filter(r => r.best).length;
+  if (n) {
+    const adv = [...new Set(W.map(r => (r.lines || [])[2]).filter(Boolean))];
+    const extra = W.map(r => (r.lines || [])[3]).filter(Boolean);
+    out.push(n >= 5 ? `친구들의 문진표를 꼼꼼히 읽고 알맞은 약을 골라 ${n}편의 처방 답장을 적극적으로 씀.`
+      : pickV([`친구의 문진표를 읽고 증상에 알맞은 약을 골라 처방 답장을 씀.`, `친구가 쓴 글을 정확하게 읽고 증상에 맞는 약과 조언을 담아 답장함.`], no));
+    if (extra.length) out.push(pickV([`'${extra[0]}'와 같이 친구의 상황에 맞는 말을 덧붙여 배려하는 마음을 전함.`,
+      `친구의 상황을 살펴 '${extra[0]}'처럼 꼭 맞는 조언을 덧붙임.`], no));
+    else if (adv.length >= 2) out.push(`'${adv[0]}', '${adv[1]}' 등 다양한 조언 표현을 활용함.`);
+    else if (adv.length === 1) out.push(`'${adv[0]}'와 같은 조언 표현을 바르게 사용함.`);
+    if (best) out.push(`친구들에게 베스트 처방으로 ${best}회 뽑힐 만큼 정성스럽고 따뜻한 답장을 씀.`);
+  } else out.push('친구의 글을 읽고 답장을 쓰는 활동에 더 적극적인 참여가 기대됨.');
+  return out.join(' ');
+}
+function reportTab() {
+  if (!TREP.length) return '<p class="muted">아직 학생 자료가 없어요.<span class="en">No student data yet.</span></p>';
+  TREP.forEach(x => { if (TCOM[TCLS + '-' + x.no] == null) TCOM[TCLS + '-' + x.no] = makeComment(x); });
+  return `<p style="margin:0 0 6px">학생이 쓴 문진표와 처방 답장을 바탕으로 문구를 만들었어요. 칸을 눌러 직접 고칠 수 있어요.<span class="en">Comments are drafted from each student's writing. Edit freely.</span></p>
+    <div class="row" style="margin-bottom:10px"><button class="sun" onclick="reportExcel()">📥 엑셀로 받기<span class="en">Download Excel</span></button>
+      <button class="ghost small" onclick="uiConfirm('문구를 처음 상태로 다시 만들까요? 고친 내용은 사라져요.\\nRegenerate all comments?',()=>{TREP.forEach(x=>delete TCOM[TCLS+'-'+x.no]);teacherMain()})">🔄 다시 만들기 · Regenerate</button></div>
+    <table class="rep"><tr><th>번호</th><th>쓴 글 요약</th><th>성적표 문구 (고칠 수 있어요)</th></tr>
+    ${TREP.map(x => `<tr><td><b>${x.no}</b></td>
+      <td class="rep-sum">${x.card ? `📋 ${(x.card.lines || []).slice(1).map(esc).join(' ')}` : '📋 -'}<br>✉️ 처방 ${(x.written || []).length}개 · 💖 ${(x.written || []).filter(r => r.best).length}</td>
+      <td style="width:55%"><textarea rows="5" oninput="TCOM['${TCLS}-${x.no}']=this.value">${esc(TCOM[TCLS + '-' + x.no])}</textarea></td></tr>`).join('')}</table>`;
+}
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+}
+async function reportExcel() {
+  try { await loadXLSX(); } catch (e) { return toast('엑셀 도구를 불러오지 못했어요\nCould not load the Excel tool.'); }
+  const rows = [['반', '번호', '손님 이름', '문진표', '쓴 처방 수', '받은 💖', '성적표 문구']];
+  TREP.forEach(x => rows.push([`5-${TCLS}`, x.no, x.card ? x.card.guest_name || '' : '', x.card ? (x.card.lines || []).join(' ') : '',
+    (x.written || []).length, (x.written || []).filter(r => r.best).length, TCOM[TCLS + '-' + x.no] || '']));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 12 }, { wch: 50 }, { wch: 10 }, { wch: 8 }, { wch: 90 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, `${TCLS}반`);
+  XLSX.writeFile(wb, `보건실_성적표문구_5-${TCLS}.xlsx`);
+}
+function studentsTab() {
+  const list = TSTU || [], nums = parseNumbers(TD.numbers || '');
+  const map = {}; list.forEach(x => map[x.no] = x);
+  const all = [...new Set([...nums, ...list.map(x => x.no)])].sort((a, b) => a - b);
+  if (!all.length) return `<p class="muted">학생 번호를 설정 탭에서 먼저 넣거나, 학생이 들어오면 여기에 나타나요.<span class="en">Add numbers in Settings, or students appear here after they log in.</span></p>`;
+  const reg = all.filter(n => map[n] && map[n].registered).length;
+  return `<p style="margin:0 0 10px">학생은 처음 들어올 때 <b>자기 비밀번호</b>를 직접 정해요. 잊어버리면 <b>초기화</b>를 눌러 주세요. 다음에 들어올 때 새로 정해요.<span class="en">Students make their own password. Reset it if they forget.</span></p>
+    <p class="ko" style="font-size:20px;margin:0 0 8px">비밀번호 등록 ${reg} / ${all.length}명</p>
+    <table><tr><th>번호<span class="en">No.</span></th><th>비밀번호<span class="en">Password</span></th><th>마지막 접속<span class="en">Last visit</span></th><th>문진표<span class="en">Form</span></th><th>쓴 답장<span class="en">Replies</span></th><th></th></tr>
+    ${all.map(n => { const x = map[n] || {}; return `<tr>
+      <td><b>${n}</b></td>
+      <td>${x.registered ? '<span class="pill">✅ 등록됨</span>' : '<span class="pill y">아직 · Not yet</span>'}</td>
+      <td>${x.last_at ? new Date(x.last_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+      <td>${x.has_card ? '📋' : '-'}</td><td>${x.replies || 0}</td>
+      <td style="white-space:nowrap">
+        <button class="small ghost" onclick="tStuPin(${n})">🔑 바꾸기 · Set</button>
+        ${x.registered ? `<button class="small ghost" onclick="uiConfirm('${n}번 비밀번호를 초기화할까요? 다음에 들어올 때 새로 정해요.\\nReset No. ${n}\\'s password?',()=>tStu(${n},'reset'))">↺ 초기화 · Reset</button>` : ''}
+        ${x.registered || x.has_card || x.replies ? `<button class="small red" onclick="uiConfirm('${n}번 학생의 문진표, 답장, 도장, 비밀번호를 모두 지울까요?\\nDelete all of No. ${n}\\'s data?',()=>tStu(${n},'delete'))">🗑 기록 삭제 · Delete</button>` : ''}</td></tr>`; }).join('')}</table>`;
+}
+function tStuPin(n) {
+  uiModal(`<h2>🔑 ${TCLS}반 ${n}번 새 비밀번호</h2><p class="eni">New password for No. ${n} (4-12)</p><input id="tsp" maxlength="12" style="width:220px" autocomplete="off">`,
+    () => tStu(n, 'setpin', document.getElementById('tsp').value.trim()), '저장<span class="en">Save</span>');
+  setTimeout(() => { const e = document.getElementById('tsp'); if (e) e.focus(); }, 50);
+}
+async function tStu(n, action, pin) {
+  if (action === 'setpin' && (!pin || pin.length < 4)) { toast('4자 이상으로 써 주세요\nUse 4+ characters.'); return; }
+  try {
+    const r = await rpc('hn_teacher_student', { p_pw: TPW, p_class: TCLS, p_no: n, p_action: action, p_pin: pin || null });
+    toast(r === 'ok' ? ({ setpin: `${n}번 비밀번호를 바꿨어요\nPassword set.`, reset: `${n}번 비밀번호를 초기화했어요\nPassword reset.`, delete: `${n}번 기록을 지웠어요\nDeleted.` })[action] : '다시 해 주세요\nPlease try again.');
+  } catch (e) { return serverError(e); }
+  GROUPS = null; teacherMain();
+}
+async function tDelReply(id) { try { await rpc('hn_teacher_del_reply', { p_pw: TPW, p_reply: id }); GROUPS = null; teacherMain(); } catch (e) { serverError(e); } }
+async function tAct(id, a) { try { await rpc('hn_teacher_action', { p_pw: TPW, p_card: id, p_action: a }); GROUPS = null; teacherMain(); } catch (e) { serverError(e); } }
+async function tClearScores() { try { await rpc('hn_clear_scores', { p_pw: TPW, p_class: TCLS }); teacherMain(); } catch (e) { serverError(e); } }
+async function tSaveNums() {
+  const v = document.getElementById('nums').value.trim();
+  try { await rpc('hn_set_numbers', { p_pw: TPW, p_class: TCLS, p_numbers: v }); toast(`저장했어요 (${parseNumbers(v).length}명)\nSaved (${parseNumbers(v).length} students)`); teacherMain(); } catch (e) { serverError(e); }
+}
+async function tSavePin() {
+  const v = document.getElementById('spin').value.trim();
+  try { await rpc('hn_set_student_pin', { p_pw: TPW, p_pin: v }); toast(v ? '핀 번호를 저장했어요\nPIN saved.' : '핀 번호를 없앴어요\nPIN removed.'); teacherMain(); } catch (e) { serverError(e); }
+}
+async function tChangePw() {
+  const n = document.getElementById('npw').value;
+  try { if (await rpc('hn_change_pw', { p_old: TPW, p_new: n })) { TPW = n; try { sessionStorage.setItem('hn_tpw', n); } catch (e) {} toast('바꿨어요\nChanged.'); } else toast('4자 이상으로 써 주세요\nUse 4+ characters.'); } catch (e) { serverError(e); }
+}
+
+/* ---- 우리 반 목표 게이지 (전자칠판) ---- */
+let GOAL = { cls: 1, n: 30, last: -1, done: false };
+try { GOAL.n = +localStorage.getItem('hn_goal') || 30; } catch (e) {}
+function goalScreen(cls) {
+  stopTimer(); GOAL.cls = cls || GOAL.cls; GOAL.last = -1; GOAL.done = false;
+  goalDraw(0); goalPoll();
+  TMR = setInterval(goalPoll, 10000);
+}
+async function goalPoll() {
+  let n = GOAL.last < 0 ? 0 : GOAL.last;
+  try { n = await rpc('hn_class_progress', { p_class: GOAL.cls }) || 0; } catch (e) {}
+  if (n !== GOAL.last) { if (GOAL.last >= 0 && n > GOAL.last) sfx('ok'); GOAL.last = n; goalDraw(n); }
+}
+function goalDraw(n) {
+  const pct = Math.min(100, Math.round(n / GOAL.n * 100)), hit = n >= GOAL.n;
+  if (hit && !GOAL.done) { GOAL.done = true; sfx('end'); }
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="top"><button class="ghost small" onclick="stopTimer();teacherMain()">← 교사 모드 <span class="eni">Teacher</span></button><h2>🎯 ${GOAL.cls}반 처방 목표<span class="en">Class ${GOAL.cls} goal</span></h2>
+      <div class="row">${[20, 30, 50, 80, 100].map(g => `<button class="small ${GOAL.n === g ? '' : 'ghost'}" onclick="GOAL.n=${g};GOAL.done=false;try{localStorage.setItem('hn_goal',${g})}catch(e){};goalDraw(GOAL.last<0?0:GOAL.last)">${g}개</button>`).join('')}
+        <button class="small ghost" onclick="goalPoll()">🔄</button></div></div>
+    <div class="goal">
+      <div class="goal-num"><b>${n}</b> / ${GOAL.n}<span class="en">replies written</span></div>
+      <div class="goal-bar"><div style="width:${pct}%"></div>${[25, 50, 75].map(x => `<i style="left:${x}%"></i>`).join('')}<span>${pct}%</span></div>
+      <div class="goal-msg ko">${hit ? '🎉 목표 달성! 우리 반 모두 명예 보건 선생님!<span class="en">Goal reached! Great job, nurses!</span>'
+        : `💉 ${GOAL.n - n}개 더 처방하면 성공!<span class="en">${GOAL.n - n} more to go!</span>`}</div>
+    </div>
+  </div>`;
+}
+
+/* ---- 6차시 script ---- */
+function groupSizes(n, base) {
+  if (n <= 0) return [];
+  const f = (k, v) => Array(Math.max(0, k)).fill(v);
+  if (base === 4) {
+    const g = Math.floor(n / 4), r = n % 4;
+    if (r === 0) return f(g, 4);
+    if (r === 3) return [...f(g, 4), 3];
+    if (r === 2) return g >= 1 ? [...f(g - 1, 4), 3, 3] : [2];
+    return g >= 2 ? [...f(g - 2, 4), 3, 3, 3] : g === 1 ? [5] : [1];
+  }
+  const g = Math.floor(n / 3), r = n % 3;
+  if (r === 0) return f(g, 3);
+  if (r === 1) return g >= 1 ? [...f(g - 1, 3), 4] : [1];
+  return g >= 2 ? [...f(g - 2, 3), 4, 4] : g === 1 ? [5] : [2];
+}
+function makeGroups(cards) {
+  const members = shuffle(cards.filter(c => !c.hidden));
+  const sizes = groupSizes(members.length, GROUP_BASE);
+  const groups = []; let i = 0;
+  sizes.forEach(sz => {
+    const g = members.slice(i, i + sz); i += sz;
+    // 같은 모둠 친구가 답장한 문진표를 환자 역으로 먼저 골라요
+    let patientCard = g.find(c => (c.replies || []).some(r => g.some(m => m.student_no === r.reply_no))) || g.find(c => (c.replies || []).length) || g[0];
+    const rest = g.filter(c => c !== patientCard);
+    const reps = patientCard.replies || [];
+    let nurse = rest.find(c => reps.some(r => r.reply_no === c.student_no)) || rest[0];
+    const usedReply = (nurse && reps.find(r => r.reply_no === nurse.student_no)) || reps[0] || null;
+    const others = rest.filter(c => c !== nurse);
+    groups.push({ size: sz, card: patientCard, reply: usedReply, roles: {
+      patient: patientCard.student_no + '번', nurse: nurse ? nurse.student_no + '번' : '',
+      friend: others[0] ? others[0].student_no + '번' : '', teacher: others[1] ? others[1].student_no + '번' : '',
+      friend2: others[2] ? others[2].student_no + '번' : '' } });
+  });
+  return groups;
+}
+function scriptTab(cards) {
+  const usable = cards.filter(c => !c.hidden);
+  if (!GROUPS) GROUPS = makeGroups(usable);
+  const n4 = GROUPS.filter(g => g.size >= 4).length, n3 = GROUPS.length - n4;
+  return `<div class="row" style="margin-bottom:10px">
+      <span class="ko" style="font-size:20px">기본 모둠 <span class="eni">Group size</span></span>
+      <button class="small ${GROUP_BASE === 4 ? '' : 'ghost'}" onclick="GROUP_BASE=4;GROUPS=null;teacherMain()">4인 기본 · 4</button>
+      <button class="small ${GROUP_BASE === 3 ? '' : 'ghost'}" onclick="GROUP_BASE=3;GROUPS=null;teacherMain()">3인 기본 · 3</button>
+      <button class="small ghost" onclick="GROUPS=null;teacherMain()">🔀 다시 섞기 · Shuffle</button>
+      <button class="small sun" onclick="printScripts()">🖨️ 대본 인쇄 · Print</button>
+      <span class="muted">문진표 ${usable.length}장 → 4인 ${n4}모둠 · 3인 ${n3}모둠 (남는 인원은 자동으로 3인/4인 조정)<span class="en">${usable.length} forms → ${n4} groups of 4 · ${n3} groups of 3</span></span></div>
+    <p class="muted" style="margin:0 0 6px">이름은 눌러서 고칠 수 있어요. 문진표를 쓴 학생이 환자, 답장을 쓴 학생이 같은 모둠이면 보건 선생님 역을 맡아요.<span class="en">Tap a name to edit it. The form writer plays the patient; the reply writer plays the nurse if in the same group.</span></p>
+    <div id="scripts">${GROUPS.map((g, i) => scriptHTML(g, i)).join('') || '<p class="muted">제출한 문진표가 있어야 대본을 만들 수 있어요.<span class="en">Scripts need patient forms first.</span></p>'}</div>`;
+}
+function scriptHTML(g, i) {
+  const c = g.card, G4 = g.size >= 4, name = c.guest_name || 'Friend';
+  const lines = (c.card_lines || []).slice(1);
+  const exs = (c.extra || '').split('\n');
+  const symLines = lines.filter(l => !exs.includes(l));
+  const first = (c.symptoms || [])[0];
+  const act = first && SYM[first] ? SYM[first].act : '아픈 표정으로';
+  const feelAct = c.feel && FEEL[c.feel] ? FEEL[c.feel].act : '';
+  const reply = g.reply && g.reply.lines && g.reply.lines.length ? g.reply.lines.join(' ') : nurseLine(adviceFor(c.feel));
+  const meds = (c.symptoms || []).filter(s => MEDS[s]).map(s => MEDS[s].name).join(', ');
+  const L = (who, text, dir) => `<div class="ln"><b>${who}</b>${dir ? `<em>(${dir}) </em>` : ''}${esc(text)}</div>`;
+  const roleBox = (label, key) => `<div><b>${label}</b><span contenteditable="true">${esc(g.roles[key])}</span></div>`;
+  return `<div class="scr">
+    <h2>${esc(name)}'s Sick Day</h2>
+    <div class="meta">5학년 ${TCLS}반 · ${i + 1}모둠 (${g.size}인) · 문진표 ${c.student_no}번${g.reply ? ` · 답장 ${g.reply.reply_no}번` : ''} · 준비물: 휴지, 약 봉투(${esc(meds)}), 체온계</div>
+    <div class="roles">${roleBox('Patient (' + esc(name) + ')', 'patient')}${roleBox('Friend (친구)', 'friend')}${roleBox('Nurse (보건 선생님)', 'nurse')}${G4 ? roleBox('Teacher (담임 선생님)', 'teacher') : ''}${g.size >= 5 ? roleBox('Friend 2 (친구 2)', 'friend2') : ''}</div>
+    <div class="scene">Scene 1. Classroom · 교실</div>
+    ${G4 ? L('Teacher', 'Good morning, everyone!') : ''}
+    ${L('Friend', `Hi, ${name}. Are you okay?`)}
+    ${L('Patient', "No, I'm not. I'm sick.", act)}
+    ${L('Friend', "What's wrong?")}
+    ${symLines.map(l => L('Patient', l)).join('')}
+    ${L('Friend', "That's too bad.")}
+    ${g.size >= 5 ? L('Friend 2', "Oh, no! That's too bad.") : ''}
+    ${G4 ? L('Teacher', `${name}, let's go to the nurse's office.`) : L('Friend', "Let's go to the nurse's office.")}
+    <div class="scene">Scene 2. Nurse's Office · 보건실</div>
+    ${G4 ? L('Teacher', `${name} is sick.`, '보건 선생님에게') : L('Friend', `${name} is sick.`, '보건 선생님에게')}
+    ${L('Nurse', `Hello, ${name}. What's wrong?`)}
+    ${lines.map((l, k) => L('Patient', l, k === 0 ? act : (feelAct && /tired|thirsty/i.test(l) ? feelAct : ''))).join('')}
+    ${L('Nurse', reply, '약 봉투를 건네며')}
+    ${L('Patient', 'Okay. Thank you.')}
+    ${L('Nurse', "You're welcome.")}
+    <div class="scene">Scene 3. The Next Day · 다음 날</div>
+    ${L('Friend', `${name}, are you okay now?`)}
+    ${L('Patient', "Yes! I'm okay now. Thank you.", '활짝 웃으며')}
+    ${G4 ? L('Teacher', "That's great!") : ''}
+    ${g.size >= 5 ? L('Friend 2', "Yay! Let's play together!") : ''}
+    <div class="gc"><b class="ko">Group Check</b><br>배운 표현을 활용하여 영어로 잘 표현했어요 <span class="eni">We used the expressions well.</span> ☆☆☆<br>서로 협력하고 창의적으로 표현했어요 <span class="eni">We worked together creatively.</span> ☆☆☆<br>존중하고 배려하는 자세로 발표를 들었어요 <span class="eni">We listened with respect.</span> ☆☆☆
+      <div class="muted" style="font-size:12px;margin-top:4px">Nurse's Office · Tr. Olivia</div></div>
+  </div>`;
+}
+function printScripts() {
+  const src = document.getElementById('scripts'); if (!src) return;
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = src.innerHTML;
+  pa.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
+  window.print();
+}
+
+/* =========================================================
+   4차시 모둠 스피드 진료 (전자칠판, 서버 저장 없음)
+   ========================================================= */
+const SP_NAMES = ['Minho','Jia','Junho','Sora','Dabin','Yuna','Tom','Emma','Ben','Lily','Hana','Max'];
+const SP_KIDS = ['kid1','kid2','kid3','kid4','kid5','kid6'];
+const SP_OPEN = ['Hi.', 'Hello.', "I'm sick.", 'Hello, nurse.'];
+const SP_CAUSE = ['I played outside.', 'I went to bed late.', 'I ate ice cream.', 'I ate too much pizza.', 'I played in the snow.', 'I ran very fast.'];
+const a_ = k => `a ${SYM[k].en}`;
+function spPatient(n, used) {
+  const pickSyms = shuffle(SYM_KEYS).slice(0, n);
+  const name = shuffle(SP_NAMES.filter(x => !used.has(x)))[0] || 'Sam'; used.add(name);
+  const lines = [];
+  if (Math.random() < .6) lines.push(shuffle(SP_OPEN)[0]);
+  if (n >= 2 && Math.random() < .6) lines.push(shuffle(SP_CAUSE)[0]);
+  const s = pickSyms, A = s.map(a_);
+  const joinA = xs => xs.length === 1 ? xs[0] : xs.length === 2 ? `${xs[0]} and ${xs[1]}` : `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
+  const list = joinA(A);
+  const trapOn = n >= 2 ? Math.random() < .65 : Math.random() < .4;
+  const trap = trapOn ? `I don't have ${a_(shuffle(SYM_KEYS.filter(k => !s.includes(k)))[0])}.` : null;
+  const style = Math.random();
+  let symLines;
+  if (trap && style < .5) {
+    // I don't have a headache. But I have a fever (and a cold).
+    symLines = [trap, `But I have ${list}.`];
+  } else if (n >= 2 && style < .75) {
+    // I have a cold. And I have a fever, too.
+    const head = joinA(A.slice(0, -1));
+    symLines = [`I have ${head}.`, `And I have ${A[n - 1]}, too.`];
+    if (trap) symLines.push(`But I don't have ${trap.slice(13, -1)}.`);
+  } else {
+    // I have a cold and a fever. But I don't have a headache.
+    symLines = [`I have ${list}.`];
+    if (trap) symLines.push(`But I don't have ${trap.slice(13, -1)}.`);
+  }
+  lines.push(...symLines);
+  let feel = null;
+  if (Math.random() < .5) { feel = Math.random() < .5 ? 'tired' : 'thirsty'; const lastAnd = /^And /.test(lines[lines.length - 1]); lines.push(!lastAnd && Math.random() < .5 ? `And I'm ${feel}.` : `I'm ${feel}, too.`); }
+  const show = shuffle(s)[0], kid = SYM[show].kid;
+  const adv = feel ? adviceFor(feel) : n >= 3 ? 'doctor' : shuffle(['rest', 'wellsoon', 'vitamins'])[0];
+  return { name, img: `${kid}_${show}`, happy: `${kid}_happy`, lines, sym: s, feel, adv };
+}
+function spRound(count) {
+  const base = [1, 1, 2, 2, 1, 2, 3, 2, 3, 2, 3, 3];
+  const plan = count <= 3 ? [1, 2, 3].slice(0, count) : Array.from({ length: count }, (_, i) => base[Math.min(base.length - 1, Math.floor(i * base.length / count))]);
+  const used = new Set();
+  const list = plan.map(n => spPatient(n, used));
+  const f = shuffle(SP_FEAT || []).find(c => (c.symptoms || []).some(k => SYM[k]));
+  if (f && list.length >= 3) {
+    const at = Math.min(2, list.length - 1);
+    list[at] = { name: f.guest_name || 'Friend', img: avImg(f.avatar, 'happy'), happy: avImg(f.avatar, 'happy'),
+      lines: (f.card_lines || []).slice(), sym: f.symptoms.filter(k => SYM[k]), feel: f.feel || null, friend: true };
+  }
+  return list;
+}
+let SP = { teams: 6, per: 12, results: {}, cur: 1 };
+let SP_FEAT = null;
+try { const s = JSON.parse(sessionStorage.getItem('hn_sp2') || 'null'); if (s) SP = { ...SP, ...s }; } catch (e) {}
+function spSave() { try { sessionStorage.setItem('hn_sp2', JSON.stringify({ teams: SP.teams, per: SP.per, results: SP.results, cur: SP.cur })); } catch (e) {} }
+const fmt = s => s.toFixed(1) + '초';
+const fmtE = s => s.toFixed(1) + ' sec';
+
+function speedSetup() {
+  stopTimer();
+  const done = Object.keys(SP.results).length;
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>⏱️ 스피드 진료<span class="en">Speed Clinic</span></h2>
+      <button class="small ghost" onclick="spSettings()">⚙️ 모둠 ${SP.teams} · 손님 ${SP.per}명<span class="en">${SP.teams} teams · ${SP.per} patients</span></button>
+      <button class="small sun" onclick="spRank()" ${done ? '' : 'disabled'}>🏆 순위<span class="en">Ranking</span></button></div>
+    <div class="panel" style="margin-bottom:14px;font-size:22px;line-height:1.7">
+      모둠이 함께 나와 손님의 말을 <b>소리 내어 읽고</b>, 아픈 곳에 맞는 <b>약을 모두</b> 골라요. 아픈 곳이 여러 개면 약도 여러 개!<span class="en">Come up as a team. Read the patient's words out loud and choose ALL the right medicines.</span>
+      <span class="muted">틀리면 +5초 벌칙. 모둠마다 손님 문장이 다르게 나오지만 난이도는 같아요.<span class="en">Wrong answer: +5 seconds. Each team gets different sentences at the same level.</span></span>
+    </div>
+    <div class="board">${Array.from({ length: SP.teams }, (_, i) => i + 1).map(t => {
+      const r = SP.results[t];
+      return `<div class="team ${SP.cur === t ? 'on' : ''}" onclick="SP.cur=${t};spSave();speedSetup()"><b>${t}모둠<span class="en">Team ${t}</span></b>
+        ${r ? `<span class="t">${fmt(r.total)}</span><div class="muted">벌칙 ${r.miss}번 · ${r.miss} miss</div>
+          <button class="small ghost team-reset" onclick="event.stopPropagation();uiConfirm('${t}모둠 기록만 지울까요?\\nClear Team ${t} only?',()=>{delete SP.results[${t}];SP.cur=${t};spSave();speedSetup()})">↺ 리셋 · Reset</button>` : '<span class="muted">대기 · Waiting</span>'}</div>`; }).join('')}</div>
+    <div class="center" style="margin-top:12px">${done ? `<button class="small ghost" onclick="uiConfirm('모든 모둠 기록을 지울까요?\\nClear all teams?',()=>{SP.results={};SP.cur=1;spSave();speedSetup()})">⟲ 전체 리셋 · Reset all</button>` : ''}</div>
+    <div class="center" style="margin-top:22px">
+      <button class="red sp-go" onclick="spStart(${SP.cur})">${SP.cur}모둠 진료 시작 ▶<span class="en">Start Team ${SP.cur}</span></button></div>
+  </div>`;
+}
+function spSettings() {
+  uiModal(`<h2>⚙️ 설정 <span class="eni">Settings</span></h2>
+    <p class="row" style="justify-content:center">모둠 수 <span class="eni">Teams</span> <input id="setT" type="number" min="2" max="10" value="${SP.teams}" style="width:90px"></p>
+    <p class="row" style="justify-content:center">모둠별 손님 수 <span class="eni">Patients</span> <input id="setP" type="number" min="3" max="12" value="${SP.per}" style="width:90px"></p>
+    <label class="row" style="justify-content:center;font-size:18px"><input id="setC" type="checkbox"> 지금까지 기록 지우기 <span class="eni">Clear records</span></label>`,
+    () => {
+      SP.teams = Math.min(10, Math.max(2, +document.getElementById('setT').value || 6));
+      SP.per = Math.min(12, Math.max(3, +document.getElementById('setP').value || 12));
+      if (document.getElementById('setC').checked) SP.results = {};
+      if (SP.cur > SP.teams) SP.cur = 1;
+      spSave(); speedSetup();
+    }, '저장<span class="en">Save</span>');
+}
+let SPG = null;
+function spStart(team) {
+  const go = () => {
+    SPG = { team, list: spRound(SP.per), i: 0, sel: new Set(), miss: 0, pen: 0, t0: performance.now(), paused: 0, pauseAt: null, msg: '', state: 'play' };
+    spDraw();
+    stopTimer(); TMR = setInterval(spTick, 100);
+  };
+  if (SP.results[team] && !spStart._ok) { uiConfirm(`${team}모둠은 이미 기록이 있어요. 다시 할까요?\nTeam ${team} has a record. Play again?`, () => { spStart._ok = true; spStart(team); }); return; }
+  spStart._ok = false;
+  // 3·2·1 카운트다운
+  let n = 3;
+  $app.innerHTML = `<div class="wrap bigscreen"><div class="center" style="padding-top:120px"><div class="sp-team">${team}모둠 준비!<span class="en">Team ${team}, get ready!</span></div><div class="sp-clock" style="text-align:center;font-size:160px" id="cd">3</div></div></div>`;
+  const cd = setInterval(() => { n--; const e = document.getElementById('cd'); if (n <= 0) { clearInterval(cd); go(); } else if (e) e.textContent = n; }, 800);
+}
+function spElapsed() {
+  const now = SPG.pauseAt ?? performance.now();
+  return (now - SPG.t0 - SPG.paused) / 1000 + SPG.pen;
+}
+function spTick() { const e = document.getElementById('spc'); if (e && SPG) e.firstChild.nodeValue = fmt(spElapsed()); }
+function spDraw(flash) {
+  const g = SPG, p = g.list[g.i], done = g.state === 'ok';
+  const lines = p.lines.map(l => done ? hl(l) : esc(l)).join(' ');
+  const say = nurseLine(p.adv || adviceFor(p.feel));
+  const head = g.practice
+    ? `<div class="row"><button class="ghost small" onclick="stopTimer();SPG=null;home()">← 처음 <span class="eni">Home</span></button><div class="sp-team">연습<span class="en">Practice</span></div></div>`
+    : `<div class="sp-team">${g.team}모둠<span class="en">Team ${g.team}</span></div>`;
+  const clock = g.practice
+    ? `<div class="sp-clock" style="font-size:28px;color:var(--teal)">⏱️ 시간 재지 않아요<small style="color:var(--teal)">No timer</small></div>`
+    : `<div class="sp-clock" id="spc">${fmt(spElapsed())}<small>${g.pen ? `벌칙 +${g.pen}초 · +${g.pen} sec` : ''}</small></div>`;
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="sp-top">${head}
+      <div class="dots">${g.list.map((_, k) => `<span class="${k < g.i || (k === g.i && done) ? 'ok' : k === g.i ? 'on' : ''}"></span>`).join('')}</div>
+      ${clock}
+    </div>
+    <div class="sp-ward ${flash ? 'shake' : ''}">
+      ${pic(done ? p.happy : p.img, done ? '😊' : '🤒')}
+      <div class="sp-bubble"><span class="nm">${p.friend ? '✉️ 친구가 만든 손님 (Made by a friend) · ' : ''}${esc(p.name)} · What's wrong?</span>${lines}</div>
+    </div>
+    ${done ? `<div class="sp-say">
+        ${pic('nurse', '👩‍⚕️')}
+        <div><div class="ko sp-say-h">✅ 정답! 보건 선생님이 되어 다 같이 말해요 <span class="eni">Correct! Say it together as the nurse.</span></div>
+          <div class="sp-say-meds">${p.sym.map(k => `<span>${medPic(k)}${MEDS[k].name}</span>`).join('')}</div>
+          <div class="sp-say-line">${esc(say)}</div>
+          <button class="ghost small" onclick='speak(${esc(JSON.stringify(say))})'>🔊 듣기 · Listen</button></div>
+      </div>`
+    : `<div class="sp-cab">${SYM_KEYS.map((k, n) => `<button class="sp-med ${g.sel.has(k) ? 'sel' : ''}" onclick="spMed('${k}')">
+      <span class="no">${n + 1}</span>${medPic(k)}${MEDS[k].name}</button>`).join('')}</div>
+    <div class="sp-msg" style="margin-top:12px">${esc(g.msg)}</div>`}
+    <div class="center" style="margin-top:10px">
+      ${done ? `<button class="sun sp-go" onclick="spNext()">${g.i + 1 < g.list.length ? '다음 손님 ▶<span class="en">Next patient</span>' : (g.practice ? '한 번 더 ▶<span class="en">Again</span>' : '진료 끝! ▶<span class="en">Finish</span>')}</button>`
+             : `<button class="red sp-go" onclick="spGive()" ${g.sel.size ? '' : 'disabled'}>💊 약 주기<span class="en">Give medicine</span></button>
+                ${g.practice ? '' : `<button class="ghost small" style="margin-left:10px" onclick="spQuit()">그만하기<span class="en">Stop</span></button>`}`}
+    </div></div>`;
+}
+function spPractice() {
+  stopTimer();
+  SPG = { practice: true, team: 0, list: spRound(5), i: 0, sel: new Set(), miss: 0, pen: 0, t0: performance.now(), paused: 0, pauseAt: null, msg: '', state: 'play' };
+  spDraw();
+}
+function spMed(k) {
+  if (!SPG || SPG.state !== 'play') return;
+  SPG.sel.has(k) ? SPG.sel.delete(k) : SPG.sel.add(k);
+  SPG.msg = ''; spDraw();
+}
+function spGive() {
+  const g = SPG, p = g.list[g.i];
+  const right = g.sel.size === p.sym.length && p.sym.every(s => g.sel.has(s));
+  if (right) {
+    g.state = 'ok'; g.pauseAt = performance.now(); g.msg = '';
+    spDraw(); speak(nurseLine(p.adv || adviceFor(p.feel)));
+  } else {
+    g.miss++; g.sel = new Set();
+    if (g.practice) g.msg = '❌ 다시 꼼꼼히 읽어 보세요 · Read carefully again.';
+    else { g.pen += 5; g.msg = '❌ +5초! 다시 꼼꼼히 읽어 보세요 · +5 sec! Read carefully again.'; }
+    spDraw(true);
+  }
+}
+function spNext() {
+  const g = SPG;
+  g.paused += performance.now() - g.pauseAt; g.pauseAt = null;
+  if (g.i + 1 >= g.list.length) return g.practice ? spPractice() : spFinish();
+  g.i++; g.sel = new Set(); g.state = 'play'; g.msg = '';
+  spDraw();
+}
+function spQuit() { uiConfirm('이 모둠 진료를 그만할까요? (기록되지 않아요)\nStop this team? (Not recorded)', () => { stopTimer(); SPG = null; speedSetup(); }); }
+function spFinish() {
+  stopTimer();
+  const g = SPG, total = spElapsed();
+  SP.results[g.team] = { total, miss: g.miss };
+  const ranked = Object.entries(SP.results).sort((a, b) => a[1].total - b[1].total);
+  const place = ranked.findIndex(r => +r[0] === g.team) + 1;
+  SP.cur = g.team % SP.teams + 1; spSave();
+  $app.innerHTML = `<div class="wrap bigscreen"><div class="panel center" style="max-width:820px;margin:30px auto">
+    <div class="sp-team">${g.team}모둠 진료 완료!<span class="en">Team ${g.team} finished!</span></div>
+    <div class="sp-clock" style="text-align:center;font-size:110px;margin:10px 0">${fmt(total)}</div>
+    <p class="ko" style="font-size:26px">벌칙 ${g.miss}번 (+${g.pen}초) · 지금까지 ${place}등<span class="en">${g.miss} miss (+${g.pen} sec) · Now #${place}</span></p>
+    <div class="panel" style="background:var(--soft);font-size:30px;font-family:Nunito;font-weight:900;margin:16px 0">
+      <div class="ko muted" style="font-size:20px">다 같이 읽어요 · Read together</div>That's too bad.<br>Take this medicine and get some rest.</div>
+    <button class="sun sp-go" onclick="speedSetup()">모둠판으로 ▶<span class="en">Team board</span></button></div></div>`;
+}
+function spRank() {
+  const ranked = Object.entries(SP.results).sort((a, b) => a[1].total - b[1].total);
+  $app.innerHTML = `<div class="wrap bigscreen"><div class="panel" style="max-width:760px;margin:30px auto">
+    <h2 class="center" style="font-size:44px;margin-top:0">🏆 명예 보건 선생님<span class="en" style="font-size:.5em">Best School Nurses</span></h2>
+    <ol class="rank">${ranked.map(([t, r], i) => `<li>${['🥇','🥈','🥉'][i] || ''} ${t}모둠 Team ${t} · ${fmt(r.total)} <span class="muted" style="font-size:22px">(벌칙 · miss ${r.miss})</span></li>`).join('')}</ol>
+    <div class="row" style="justify-content:center;margin-top:20px">
+      <button class="ghost" onclick="speedSetup()">모둠판으로<span class="en">Team board</span></button>
+      <button class="red small" onclick="uiConfirm('기록을 모두 지울까요?\\nClear all records?',()=>{SP.results={};SP.cur=1;spSave();speedSetup()})">기록 지우기<span class="en">Clear</span></button></div>
+  </div></div>`;
+}
+
+/* =========================================================
+   몸으로 말해요 (반 전체 도전, 전자칠판, 서버 저장 없음)
+   앉은 학생들이 화면 문장을 몸으로 표현 → 앞에 나온 도전자가 영어 문장으로 맞히기
+   ========================================================= */
+const AC_POOL = [
+  ...SYM_KEYS.map(k => ({ en: `I have a ${SYM[k].en}.`, ko: { cold: '감기에 걸렸어요.', fever: '열이 나요.', headache: '머리가 아파요.', runnynose: '콧물이 나요.', stomachache: '배가 아파요.' }[k], img: `${SYM[k].kid}_${k}`, emoji: SYM[k].emoji, type: 'sick' })),
+  { en: "I'm tired.", ko: '피곤해요.', img: 'word_tired', emoji: '🥱', type: 'sick' },
+  { en: "I'm thirsty.", ko: '목말라요.', img: 'word_thirsty', emoji: '🥵', type: 'sick' },
+  { en: 'Take this medicine.', ko: '이 약 좀 먹어.', img: 'med_headache', emoji: '💊', type: 'advice' },
+  ...Object.keys(ADV).map(k => ({ en: ADV[k].en, ko: ADV[k].ko, img: ADV[k].img, emoji: ADV[k].emoji, type: 'advice' })),
+  { en: "What's wrong?", ko: '어디가 아프니?', img: 'nurse_worried', emoji: '❓', type: 'talk' },
+  { en: "That's too bad.", ko: '그것 참 안됐구나.', img: 'nurse_m_worried', emoji: '😢', type: 'talk' },
+  { en: "I'm sick.", ko: '나 아파.', img: 'kid1_cold', emoji: '🤒', type: 'talk' }
+];
+let AC = { time: 120, cls: 1, mode: 'class', turns: [] };
+let ACG = null;
+// 기록: 시간 안에 맞힌 개수(n). 모두 맞히면 걸린 시간(t초)도 기록 → 모두 맞힌 기록이 더 높고, 그중엔 빠른 게 이김
+const acBest = cls => { try { const v = JSON.parse(localStorage.getItem('hn_ac_best2_' + cls)); return v && typeof v.n === 'number' ? v : null; } catch (e) { return null; } };
+const acSetBest = (cls, v) => { try { localStorage.setItem('hn_ac_best2_' + cls, JSON.stringify(v)); } catch (e) {} };
+const acBetter = (a, b) => !b || (a.t != null ? (b.t == null || a.t < b.t) : (b.t == null && a.n > b.n));
+const acFmt = r => !r ? '아직 없어요 · None yet' : r.t != null ? `${r.n}문장 모두 · ${r.t}초 <span class="eni">All ${r.n} in ${r.t}s</span>` : `${r.n}개 <span class="eni">${r.n} correct</span>`;
+let SFX = null;
+function sfx(kind) {
+  try {
+    SFX = SFX || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = SFX, t0 = ctx.currentTime;
+    const tone = (f, start, dur, type = 'sine', vol = .25) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t0 + start);
+      g.gain.setValueAtTime(0, t0 + start); g.gain.linearRampToValueAtTime(vol, t0 + start + .01);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + start + dur);
+      o.connect(g); g.connect(ctx.destination); o.start(t0 + start); o.stop(t0 + start + dur + .02);
+    };
+    if (kind === 'ok') { tone(880, 0, .15, 'triangle'); tone(1320, .12, .28, 'triangle'); }
+    else if (kind === 'pass') { tone(180, 0, .35, 'square', .16); tone(140, .05, .35, 'square', .12); }
+    else if (kind === 'end') { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .12, .3, 'triangle')); }
+  } catch (e) {}
+}
+function acSetup() {
+  stopTimer(); ACG = null; AC.mode = 'class';
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🎭 몸으로 말해요<span class="en">Act It Out</span></h2></div>
+    <div class="ac-how">
+      <div><span class="ac-n">1</span><b class="ko">도전자 앞으로!</b><span class="en">Challengers, come up!</span></div>
+      <div><span class="ac-n">2</span><b class="ko">앉은 친구들은 몸으로!</b><span class="en">Everyone else, act it out!</span></div>
+      <div><span class="ac-n">3</span><b class="ko">도전자는 영어로!</b><span class="en">Challengers, say it in English!</span></div>
+    </div>
+    <div class="ac-score ko">⏱️ 제한 시간 안에 <b>맞힌 문장 수</b>가 기록돼요. ${AC_POOL.length}문장을 <b>모두 맞히면 걸린 시간</b>이 기록돼요!
+      <span class="en">Your score is how many sentences you get in time. Get all ${AC_POOL.length} and your time is recorded!</span></div>
+    <div class="row" style="justify-content:center;margin:18px 0;gap:12px">
+      <span class="ko" style="font-size:24px">반 <span class="eni">Class</span></span>
+      ${[1, 2, 3, 4].map(c => `<button class="${AC.cls === c ? '' : 'ghost'}" onclick="AC.cls=${c};acSetup()">${c}반</button>`).join('')}
+      <span class="ko" style="font-size:24px;margin-left:18px">시간 <span class="eni">Time</span></span>
+      ${[30, 60, 90, 120, 180].map(t => `<button class="${AC.time === t ? '' : 'ghost'}" onclick="AC.time=${t};acSetup()">${t}초</button>`).join('')}
+    </div>
+    <div class="center ko" style="font-size:28px">🏆 ${AC.cls}반 최고 기록 <span class="eni">Best</span> <b style="color:var(--red)">${acFmt(acBest(AC.cls))}</b></div>
+    <div class="center" style="margin-top:18px"><button class="red sp-go" onclick="acCount()">도전 시작 ▶<span class="en">Start</span></button></div>
+  </div>`;
+}
+function acCount() {
+  let n = 3;
+  $app.innerHTML = `<div class="wrap bigscreen"><div class="ac-peek"><div class="ac-warn">도전자는 뒤돌아 서요!<span class="en">Challenger, turn around!</span></div><div class="sp-clock" style="font-size:160px;text-align:center" id="cd">3</div></div></div>`;
+  const cd = setInterval(() => { n--; const e = document.getElementById('cd'); if (n <= 0) { clearInterval(cd); acStart(); } else if (e) e.textContent = n; }, 900);
+}
+function acStart() {
+  // 맞힌 문장은 다시 안 나오고, 패스한 문장은 맨 뒤로 돌아가요
+  ACG = { deck: shuffle(AC_POOL), time: AC.time, ok: [], pass: [] };
+  acDraw();
+  stopTimer();
+  TMR = setInterval(() => {
+    ACG.time--;
+    const e = document.getElementById('acTime'); if (e) { e.firstChild.nodeValue = Math.max(0, ACG.time) + '초'; e.classList.toggle('low', ACG.time <= 10); }
+    if (ACG.time <= 0) { stopTimer(); acDone(); }
+  }, 1000);
+}
+function acCur() { return ACG.deck[0]; }
+function acDraw(flash) {
+  const g = ACG, c = acCur();
+  const tag = { sick: '🤒 아픈 곳 · Sick', advice: '💊 조언 · Advice', talk: '💬 대화 · Talk' }[c.type];
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="sp-top"><div class="row" style="gap:14px"><button class="ghost small" onclick="acQuit()">← 처음 <span class="eni">Home</span></button>
+      <div class="sp-team">✅ ${g.ok.length}<span class="en">Correct</span></div></div>
+      <div class="ko ac-tag ${c.type}">${tag}</div>
+      <div class="sp-clock" id="acTime">${g.time}초<small>남은 문장 ${g.deck.length} · ⏭ ${g.pass.length}</small></div></div>
+    <div class="ac-big ${flash ? 'pop' : ''}">
+      ${pic(c.img, c.emoji)}
+      <div><div class="ac-sent">${esc(c.en)}</div><div class="ac-ko">${esc(c.ko)}</div></div>
+    </div>
+    <div class="ac-note ko">🙈 도전자는 보지 마세요! 앉은 친구들은 말없이 몸으로! <span class="eni">Challengers, don't look! Act without words!</span></div>
+    <div class="row" style="justify-content:center;gap:24px;margin-top:10px">
+      <button class="ghost sp-go" onclick="acNext(false)">⏭ 패스 · 반칙<span class="en">Pass · Foul</span></button>
+      <button class="sp-go" style="background:var(--ok);box-shadow:0 5px 0 #1f7a4b" onclick="acNext(true)">✅ 정답!<span class="en">Correct!</span></button>
+    </div>
+  </div>`;
+}
+function acQuit() {
+  uiConfirm('도전을 그만하고 처음으로 갈까요? (기록되지 않아요)\nGo home? (Not recorded)', () => { stopTimer(); ACG = null; home(); });
+}
+function acNext(ok) {
+  const g = ACG; if (!g || g.time <= 0 || g.done) return;
+  const c = g.deck.shift();
+  if (ok) { g.ok.push(c); sfx('ok'); }
+  else { g.pass.push(c); g.deck.push(c); sfx('pass'); }
+  if (!g.deck.length) { stopTimer(); return acDone(true); }
+  acDraw(true);
+}
+function acDone(allClear) {
+  const g = ACG; if (!g || g.done) return; g.done = true;
+  const n = g.ok.length, used = AC.time - Math.max(0, g.time);
+  const rec = allClear ? { n, t: used } : { n, t: null };
+  const best = acBest(AC.cls), isBest = n > 0 && acBetter(rec, best);
+  if (isBest) acSetBest(AC.cls, rec);
+  sfx('end');
+  const passedLeft = g.pass.filter(c => !g.ok.includes(c)).filter((c, i, a) => a.indexOf(c) === i);
+  const all = [...g.ok.map(c => [c, true]), ...passedLeft.map(c => [c, false])];
+  $app.innerHTML = `<div class="wrap bigscreen">
+    <div class="center">
+      <div class="sp-team">${allClear ? '🎉 모든 문장 성공!' : `${AC.cls}반 도전 끝!`}<span class="en">${allClear ? `All ${n} sentences cleared!` : 'Time is up!'}</span></div>
+      <div class="sp-clock" style="font-size:110px;text-align:center;margin:4px 0">${allClear ? `${used}초` : `${n}개`}</div>
+      <div class="ko" style="font-size:26px">${isBest ? '🏆 새 반 최고 기록! <span class="eni">New class best!</span>' : `🏆 반 최고 기록 ${acFmt(best)}`}</div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <div class="ko" style="font-size:24px;margin-bottom:8px">다 같이 읽어요 <span class="eni">Read together</span></div>
+      <div class="ac-list">${all.map(([c, ok]) => `<button class="ghost ${ok ? '' : 'passed'}" onclick='speak(${esc(JSON.stringify(c.en))})'>${ok ? '✅' : '⏭'} ${esc(c.en)}</button>`).join('') || '<span class="muted">-</span>'}</div>
+    </div>
+    <div class="row" style="justify-content:center;gap:16px;margin-top:12px">
+      <button class="ghost" onclick="home()">← 처음<span class="en">Home</span></button>
+      <button class="sun sp-go" onclick="acSetup()">다시 도전 ▶<span class="en">Try again</span></button>
+    </div>
+  </div>`;
+}
+
+home();
+</script>
+</body>
+</html>
