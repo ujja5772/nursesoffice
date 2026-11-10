@@ -443,6 +443,7 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
   .syms{grid-template-columns:repeat(3,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.menu button.shut{opacity:.55;filter:grayscale(.6)}
 </style>
 </head>
 <body>
@@ -798,6 +799,23 @@ function serverError(e) {
 /* =========================================================
    HOME
    ========================================================= */
+// 스피드 진료·몸으로 말해요는 교사 비밀번호로 연 기기(전자칠판)에서만 열려요
+function boardOpen() { try { return localStorage.getItem('hn_board') === '1'; } catch (e) { return false; } }
+function boardLock() { try { localStorage.removeItem('hn_board'); } catch (e) {} home(); }
+function boardGate(go) {
+  if (boardOpen()) return go();
+  uiModal(`<p style="font-size:24px;font-family:Jua;margin:0">🔒 선생님과 함께하는 활동이에요</p>
+    <p class="eni" style="font-size:18px;margin:4px 0 12px">This activity is for the class board.</p>
+    <p style="margin:0 0 8px">교사 비밀번호 <span class="eni">Teacher password</span></p>
+    <input id="bpw" type="password" style="width:100%">`, async () => {
+    const pw = (document.getElementById('bpw') || {}).value || '';
+    let ok = false; try { ok = await rpc('hn_teacher_login', { p_pw: pw }); } catch (e) {}
+    if (!ok) return toast('비밀번호가 맞지 않아요\nWrong password.');
+    try { localStorage.setItem('hn_board', '1'); } catch (e) {}
+    go();
+  }, '열기<span class="en">Open</span>');
+  setTimeout(() => { const i = document.getElementById('bpw'); if (i) { i.focus(); i.onkeydown = e => { if (e.key === 'Enter') i.closest('.card').querySelector('[data-ok]').click(); }; } }, 30);
+}
 function home() {
   stopTimer();
   $app.innerHTML = `
@@ -811,12 +829,13 @@ function home() {
       <div>
         <div class="menu">
           <button class="ghost" onclick="practice('words')"><span class="em">📣</span><span>다 함께 연습하기 <span class="eni">Practice Together</span><small>전자칠판 · 단어, 표현, 스피드 진료 연습<br>Board · words, expressions, Speed Clinic practice</small></span></button>
-          <button class="sun" onclick="speedSetup()"><span class="em">⏱️</span><span>스피드 진료 <span class="eni">Speed Clinic</span><small>읽기 · 전자칠판 · 모둠별로 나와서 읽고 약 고르기<br>Reading · Board · Teams read and pick medicine</small></span></button>
-          <button class="ghost" onclick="acSetup()"><span class="em">🎭</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>말하기 · 전자칠판 · 몸으로 표현하고 영어로 맞히기<br>Speaking · Board · Act it out, guess in English</small></span></button>
+          <button class="sun ${boardOpen() ? '' : 'shut'}" onclick="boardGate(speedSetup)"><span class="em">${boardOpen() ? '⏱️' : '🔒'}</span><span>스피드 진료 <span class="eni">Speed Clinic</span><small>읽기 · 전자칠판 · 모둠별로 나와서 읽고 약 고르기<br>Reading · Board · Teams read and pick medicine</small></span></button>
+          <button class="ghost ${boardOpen() ? '' : 'shut'}" onclick="boardGate(acSetup)"><span class="em">${boardOpen() ? '🎭' : '🔒'}</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>말하기 · 전자칠판 · 몸으로 표현하고 영어로 맞히기<br>Speaking · Board · Act it out, guess in English</small></span></button>
           <button class="red" onclick="writeLogin()"><span class="em">📋</span><span>보건실 문진표 <span class="eni">Patient Forms</span><small>쓰기 · 크롬북 개별 · 손님 되기 & 보건 선생님 되기<br>Writing · Chromebook · Be a patient & be a nurse</small></span></button>
         </div>
         <div class="credit">5학년 영어 11. I Have a Headache · 만든 이 Tr. Olivia</div>
-        <div class="center" style="margin-top:18px"><button class="ghost small teacher-btn" onclick="teacher()">🗂️ 교사 모드 · Teacher</button></div>
+        <div class="center" style="margin-top:18px"><button class="ghost small teacher-btn" onclick="teacher()">🗂️ 교사 모드 · Teacher</button>
+          ${boardOpen() ? `<button class="ghost small teacher-btn" style="margin-left:8px" onclick="boardLock()">🔒 칠판 활동 잠그기 · Lock</button>` : ''}</div>
       </div>
     </div>
   </div>`;
@@ -1451,7 +1470,7 @@ async function tLogin(setup) {
   try {
     const ok = setup ? await rpc('hn_setup_pw', { p_new: pw }) : await rpc('hn_teacher_login', { p_pw: pw });
     if (!ok) return toast(setup ? '4자 이상으로 정해 주세요\nUse 4+ characters.' : '비밀번호가 맞지 않아요\nWrong password.');
-    TPW = pw; try { sessionStorage.setItem('hn_tpw', pw); } catch (e) {}
+    TPW = pw; try { sessionStorage.setItem('hn_tpw', pw); localStorage.setItem('hn_board', '1'); } catch (e) {}
     teacherMain();
   } catch (e) { serverError(e); }
 }
