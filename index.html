@@ -828,10 +828,10 @@ function home() {
       </div>
       <div>
         <div class="menu">
-          <button class="ghost" onclick="practice('words')"><span class="em">📣</span><span>다 함께 연습하기 <span class="eni">Practice Together</span><small>전자칠판 · 단어, 표현, 스피드 진료 연습<br>Board · words, expressions, Speed Clinic practice</small></span></button>
-          <button class="sun ${boardOpen() ? '' : 'shut'}" onclick="boardGate(speedSetup)"><span class="em">${boardOpen() ? '⏱️' : '🔒'}</span><span>스피드 진료 <span class="eni">Speed Clinic</span><small>읽기 · 전자칠판 · 모둠별로 나와서 읽고 약 고르기<br>Reading · Board · Teams read and pick medicine</small></span></button>
-          <button class="ghost ${boardOpen() ? '' : 'shut'}" onclick="boardGate(acSetup)"><span class="em">${boardOpen() ? '🎭' : '🔒'}</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>말하기 · 전자칠판 · 몸으로 표현하고 영어로 맞히기<br>Speaking · Board · Act it out, guess in English</small></span></button>
-          <button class="red" onclick="writeLogin()"><span class="em">📋</span><span>보건실 문진표 <span class="eni">Patient Forms</span><small>쓰기 · 크롬북 개별 · 손님 되기 & 보건 선생님 되기<br>Writing · Chromebook · Be a patient & be a nurse</small></span></button>
+          <button class="ghost" onclick="practice('words')"><span class="em">📣</span><span>다 함께 연습하기 <span class="eni">Practice Together</span><small>아픈 증상 단어와 표현을 함께 익혀요<br>Learn the words and expressions together</small></span></button>
+          <button class="sun ${boardOpen() ? '' : 'shut'}" onclick="boardGate(speedSetup)"><span class="em">${boardOpen() ? '⏱️' : '🔒'}</span><span>스피드 진료 <span class="eni">Speed Clinic</span><small>모둠별로 손님의 말을 읽고 알맞은 약을 골라요<br>Teams read and pick the right medicine</small></span></button>
+          <button class="ghost ${boardOpen() ? '' : 'shut'}" onclick="boardGate(acSetup)"><span class="em">${boardOpen() ? '🎭' : '🔒'}</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>친구들의 몸짓을 보고 영어 문장으로 맞혀요<br>Watch and guess the sentence in English</small></span></button>
+          <button class="red" onclick="writeLogin()"><span class="em">📋</span><span>보건실 문진표 <span class="eni">Patient Forms</span><small>손님이 되어 문진표를 쓰고, 보건 선생님이 되어 처방해요<br>Write a form, then reply as a nurse</small></span></button>
         </div>
         <div class="credit">5학년 영어 11. I Have a Headache · 만든 이 Tr. Olivia</div>
         <div class="center" style="margin-top:18px"><button class="ghost small teacher-btn" onclick="teacher()">🗂️ 교사 모드 · Teacher</button>
@@ -1782,14 +1782,18 @@ function printScripts() {
 /* =========================================================
    4차시 모둠 스피드 진료 (전자칠판, 서버 저장 없음)
    ========================================================= */
-const SP_NAMES = ['Minho','Jia','Junho','Sora','Dabin','Yuna','Tom','Emma','Ben','Lily','Hana','Max'];
+// 그림 속 아이와 어울리는 이름 (kid1·3·5 남자, kid2·4·6 여자)
+const SP_NAMES = {
+  boy:  ['Minho', 'Junho', 'Jihun', 'Tom', 'Ben', 'Max', 'Leo', 'Sam'],
+  girl: ['Jia', 'Sora', 'Yuna', 'Hana', 'Emma', 'Lily', 'Mia', 'Ella']
+};
+const KID_GIRL = new Set(['kid2', 'kid4', 'kid6']);
 const SP_KIDS = ['kid1','kid2','kid3','kid4','kid5','kid6'];
 const SP_OPEN = ['Hi.', 'Hello.', "I'm sick.", 'Hello, nurse.'];
 const SP_CAUSE = ['I played outside.', 'I went to bed late.', 'I ate ice cream.', 'I ate too much pizza.', 'I played in the snow.', 'I ran very fast.'];
 const a_ = k => `a ${SYM[k].en}`;
 function spPatient(n, used) {
   const pickSyms = shuffle(SYM_KEYS).slice(0, n);
-  const name = shuffle(SP_NAMES.filter(x => !used.has(x)))[0] || 'Sam'; used.add(name);
   const lines = [];
   if (Math.random() < .6) lines.push(shuffle(SP_OPEN)[0]);
   if (n >= 2 && Math.random() < .6) lines.push(shuffle(SP_CAUSE)[0]);
@@ -1817,6 +1821,8 @@ function spPatient(n, used) {
   let feel = null;
   if (Math.random() < .5) { feel = Math.random() < .5 ? 'tired' : 'thirsty'; const lastAnd = /^And /.test(lines[lines.length - 1]); lines.push(!lastAnd && Math.random() < .5 ? `And I'm ${feel}.` : `I'm ${feel}, too.`); }
   const show = shuffle(s)[0], kid = SYM[show].kid;
+  const pool = SP_NAMES[KID_GIRL.has(kid) ? 'girl' : 'boy'];
+  const name = shuffle(pool.filter(x => !used.has(x)))[0] || pool[0]; used.add(name);
   const adv = feel ? adviceFor(feel) : n >= 3 ? 'doctor' : shuffle(['rest', 'wellsoon', 'vitamins'])[0];
   return { name, img: `${kid}_${show}`, happy: `${kid}_happy`, lines, sym: s, feel, adv };
 }
@@ -2036,7 +2042,7 @@ function acSetup() {
       <span class="en">Your score is how many sentences you get in time. Get all ${AC_POOL.length} and your time is recorded!</span></div>
     <div class="row" style="justify-content:center;margin:18px 0;gap:12px">
       <span class="ko" style="font-size:24px">반 <span class="eni">Class</span></span>
-      ${[1, 2, 3, 4].map(c => `<button class="${AC.cls === c ? '' : 'ghost'}" onclick="AC.cls=${c};acSetup()">${c}반</button>`).join('')}
+      <select style="font-size:24px;font-family:Jua;padding:6px 10px" onchange="AC.cls=+this.value;acSetup()">${Array.from({ length: 15 }, (_, i) => i + 1).map(c => `<option value="${c}" ${AC.cls === c ? 'selected' : ''}>${c}반</option>`).join('')}</select>
       <span class="ko" style="font-size:24px;margin-left:18px">시간 <span class="eni">Time</span></span>
       ${[30, 60, 90, 120, 180].map(t => `<button class="${AC.time === t ? '' : 'ghost'}" onclick="AC.time=${t};acSetup()">${t}초</button>`).join('')}
     </div>
