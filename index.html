@@ -556,6 +556,15 @@ function demoRpc(fn, a) {
           written: DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === no && r.lines).map(r => ({ lines: r.lines, best: !!r.best })),
           received: DB.replies.filter(r => ids.includes(r.card_id) && r.lines).length }; });
     }
+    case 'hn_teacher_move': {
+      const has = (cl, no) => !!DB.students[cl + '-' + no] || c.some(x => x.class_no === cl && x.student_no === no) || DB.replies.some(r => r.class_no === cl && r.reply_no === no);
+      if (has(a.p_to_class, a.p_to_no)) return 'exists';
+      const k1 = a.p_class + '-' + a.p_no, k2 = a.p_to_class + '-' + a.p_to_no;
+      if (DB.students[k1]) { DB.students[k2] = DB.students[k1]; delete DB.students[k1]; }
+      c.filter(x => x.class_no === a.p_class && x.student_no === a.p_no).forEach(x => { x.class_no = a.p_to_class; x.student_no = a.p_to_no; });
+      DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === a.p_no).forEach(r => { r.class_no = a.p_to_class; r.reply_no = a.p_to_no; });
+      return 'ok';
+    }
     case 'hn_class_progress': return DB.replies.filter(r => r.lines && r.class_no === a.p_class).length;
     case 'hn_teacher_del_reply': DB.replies = DB.replies.filter(r => r.id !== a.p_reply); return true;
     case 'hn_submit_card': {
@@ -572,8 +581,10 @@ function demoRpc(fn, a) {
       let p = DB.replies.find(r => r.class_no === a.p_class && r.reply_no === a.p_no && !r.lines);
       if (!p) {
         const cnt = id => DB.replies.filter(r => r.card_id === id).length;
+        const done = x => DB.replies.some(r => r.reply_no === a.p_no && r.class_no === a.p_class && c.some(y => y.id === r.card_id && y.student_no === x.student_no)) ? 1 : 0;
         const pool = shuffle(c.filter(x => x.class_no === a.p_class && x.student_no !== a.p_no && !x.hidden
-          && !DB.replies.some(r => r.reply_no === a.p_no && r.class_no === a.p_class && c.some(y => y.id === r.card_id && y.student_no === x.student_no)))).sort((x, y) => cnt(x.id) - cnt(y.id));
+          && !DB.replies.some(r => r.card_id === x.id && r.reply_no === a.p_no)))
+          .sort((x, y) => done(x) - done(y) || cnt(x.id) - cnt(y.id));
         if (!pool.length) return null;
         p = { id: DB.seq++, card_id: pool[0].id, class_no: a.p_class, reply_no: a.p_no, lines: null };
         DB.replies.push(p);
@@ -958,7 +969,8 @@ async function writeLogin() {
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2></div>
     <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
       ${CLS_FIX ? `<div class="row" style="justify-content:space-between"><span class="ko" style="font-size:30px">🏫 5학년 <b style="color:var(--red)">${CLS_FIX}</b>반 <span class="eni">Class ${CLS_FIX}</span></span>
-          <button class="small ghost" onclick="clsUnfix()">반 바꾸기 · Change</button><input type="hidden" id="wCls" value="${CLS_FIX}"></div>`
+          <input type="hidden" id="wCls" value="${CLS_FIX}"></div>
+          <p class="muted" style="margin:-6px 0 0">반이 다르면 손을 들어 선생님께 말해요.<span class="en">Wrong class? Raise your hand.</span></p>`
         : `<label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${[1,2,3,4].map(c => `<option ${last.cls == c ? 'selected' : ''} value="${c}">5학년 ${c}반</option>`).join('')}</select></label>`}
       <label>번호 <span class="eni">No.</span> <span id="numBox"><input id="wNo" type="number" min="1" max="99" style="width:120px"></span></label>
       <label>비밀번호 <span class="eni">Password</span> <input id="wPin" type="password" maxlength="12" style="width:200px" onkeydown="if(event.key==='Enter')writeEnter()" autocomplete="off"></label>
@@ -990,7 +1002,10 @@ function pinSetup(cls, no) {
   $app.innerHTML = `<div class="wrap">
     <div class="top"><button class="ghost small" onclick="writeLogin()">← 돌아가기 <span class="eni">Back</span></button><h2>🔑 내 비밀번호 정하기<span class="en">Make your password</span></h2></div>
     <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
-      <p class="ko" style="font-size:24px;margin:0">${cls}반 ${no}번, 처음 왔네요! 👋<span class="en">Class ${cls} No. ${no}, welcome!</span></p>
+      <div class="center" style="background:#fff1f2;border:3px solid var(--red);border-radius:16px;padding:12px">
+        <div class="ko" style="font-size:22px">처음 왔네요! 👋 내 반과 번호가 맞나요?</div>
+        <div class="ko" style="font-size:44px;color:var(--red)">5학년 ${cls}반 ${no}번</div>
+        <div class="eni">Is this your class and number? If not, go back.</div></div>
       <p style="margin:0">다음부터 이 비밀번호로 들어와요. 친구에게 알려 주지 마세요! (4~12자)<span class="en">Use it next time. Keep it secret! (4-12 characters)</span></p>
       <label>비밀번호 <span class="eni">Password</span> <input id="np1" type="password" maxlength="12" style="width:220px" autocomplete="off"></label>
       <label>한 번 더 <span class="eni">Again</span> <input id="np2" type="password" maxlength="12" style="width:220px" autocomplete="off" onkeydown="if(event.key==='Enter')pinSave(${cls},${no})"></label>
@@ -1153,8 +1168,19 @@ function wordOK(raw, first) {
   return DICT.has(w) || w === 'i';
 }
 // texts 안의 철자/문법 문제를 찾아요 → [{msg, html}]
+// 수업과 상관없는 장난 글 (67, six seven, 같은 말 반복 등)
+const JUNK = [
+  [/(^|\D)6\s*[-~.,]?\s*7(\D|$)/, '67'],
+  [/\bsix\s*-?\s*seven\b|sixseven/i, 'six seven'],
+  [/([a-z])\1{3,}/i, '같은 글자 반복'],
+  [/\b(\w+)\b(?:\W+\1\b){2,}/i, '같은 말 반복'],
+  [/[bcdfghjklmnpqrstvwxz]{5,}/i, '아무렇게나 친 글자']
+];
+function junkIn(t) { const j = JUNK.find(([re]) => re.test(String(t || ''))); return j ? j[1] : null; }
 function englishIssues(texts) {
   const issues = [];
+  texts.filter(Boolean).forEach(t => { const j = junkIn(t); if (j) issues.push(`🚫 <b>${esc(j)}</b>: 수업과 상관없는 말은 쓸 수 없어요. 손님과 처방에 어울리는 문장을 써요. <span class="eni">Please write a sentence that fits the lesson.</span>`); });
+  if (issues.length) return issues;
   texts.filter(Boolean).forEach(t => {
     const flagged = new Set();
     GRAMMAR.forEach(([re, fix, ko]) => { const m = t.match(re); if (m) { issues.push(`📝 <b>${esc(m[0])}</b> → <b>${esc(fix)}</b> · ${esc(ko)}`); m[0].toLowerCase().split(/\s+/).forEach(x => flagged.add(x)); } });
@@ -1194,6 +1220,7 @@ function lineEditor(title, guest, lines, onSave, check = true) {
     const g = guest !== null ? d.querySelector('#edG').value.trim() : null;
     const ls = [...d.querySelectorAll('.edL')].map(e => e.value.trim()).filter(Boolean);
     if (guest !== null && !/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(g)) return toast('손님 이름은 영어로 써요\nWrite the name in English.');
+    if (check && guest !== null && junkIn(g)) return toast('🚫 수업에 어울리는 이름으로 써 주세요\nPlease use a proper name.');
     if (!ls.length) return toast('문장이 하나는 있어야 해요\nKeep at least one sentence.');
     if (ls.some(l => !/^[A-Za-z0-9 ,.'!?-]+$/.test(l))) return toast('영어로만 써요\nEnglish only, please.');
     if (check) { await loadWords(); const iss = englishIssues(ls); showIssues('spellE', iss); if (iss.length) return toast('🔍 고칠 곳이 있어요\nPlease fix the words.'); }
@@ -1203,6 +1230,11 @@ function lineEditor(title, guest, lines, onSave, check = true) {
 function editMyCard(card) {
   const rest = (card.card_lines || []).slice(1);
   lineEditor('✏️ 내 문진표 고치기 <span class="eni">Edit my form</span>', card.guest_name || '', rest, async (g, ls) => {
+    const want = [...(card.symptoms || [])].sort().join(), got = textSyms(ls).sort().join();
+    if (want && got !== want) {
+      toast(`🩺 증상은 바꿀 수 없어요. 처음 고른 증상(${(card.symptoms || []).map(k => SYM[k] ? SYM[k].en : k).join(', ')})을 그대로 써요\nKeep the same symptoms.`, 3600);
+      return false;
+    }
     const lines = [`Hello, I'm ${g.replace(/\b[a-z]/g, c => c.toUpperCase())}.`, ...ls];
     const r = await rpc('hn_edit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_guest: g.replace(/\b[a-z]/g, c => c.toUpperCase()), p_lines: lines, p_slot: card.slot || 1 });
     if (r === 'pin') { pinFail(); return; }
@@ -1346,6 +1378,7 @@ async function guestNext() {
   if (W.step === 0) {
     if (!W.avatar) return toast('손님 그림을 골라 주세요\nChoose a picture.');
     if (!/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(W.guest)) return toast('손님 이름을 영어로 써 주세요\nWrite the name in English.');
+    if (junkIn(W.guest)) return toast('🚫 수업에 어울리는 이름으로 써 주세요\nPlease use a proper name.');
     W.guest = W.guest.replace(/\b[a-z]/g, c => c.toUpperCase());
   }
   if (W.step === 1 && W.sym.length < 2) return toast(W.sym.length ? '아픈 곳을 하나 더 골라 주세요 (2~4개)\nChoose at least 2.' : '아픈 곳을 2개 이상 골라 주세요\nChoose 2 to 4.');
@@ -1369,6 +1402,10 @@ const SYM_RE = {
   cold: /\b(?:have|has|had|got|get|a)\s+(?:a\s+)?(?:bad\s+)?cold\b(?!\s+(?:water|drink|juice|milk|ice|food|weather|day|wind|room|noodles?))/i,
   fever: /\bfever\b/i, headache: /\bhead ?ache\b/i, runnynose: /\brunny\s+nose\b/i, stomachache: /\bstomach ?ache\b/i
 };
+function textSyms(lines) {
+  const ls = (lines || []).filter(l => !/\b(?:don'?t|do not|doesn'?t|not)\b/i.test(l));
+  return SYM_KEYS.filter(k => ls.some(l => SYM_RE[k].test(l)));
+}
 function extraSymIssues(extras) {
   const out = [];
   SYM_KEYS.forEach(k => {
@@ -1464,7 +1501,8 @@ function nurseDraw() {
 }
 function nrMed(k) { if (NR.step !== 'meds') return; NR.sel.has(k) ? NR.sel.delete(k) : (NR.sel.size < 4 ? NR.sel.add(k) : toast('약은 4개까지!\nUp to 4 medicines.')); nurseDraw(); }
 function nrGive() {
-  const need = NR.card.symptoms || [];
+  const fromText = textSyms(NR.card.card_lines);
+  const need = fromText.length ? fromText : (NR.card.symptoms || []);
   if (NR.sel.size === need.length && need.every(s => NR.sel.has(s))) { NR.step = 'write'; NR.msg = ''; nrSave(); }
   else { NR.sel = new Set(); NR.msg = '음… 문진표를 다시 읽어 볼까요? 📖 · Hmm… read the form again.'; }
   nurseDraw(); if (NR.msg) shakeEl('.cabinet');
@@ -1703,12 +1741,28 @@ function studentsTab() {
       <td style="white-space:nowrap">
         <button class="small ghost" onclick="tStuPin(${n})">🔑 바꾸기 · Set</button>
         ${x.registered ? `<button class="small ghost" onclick="uiConfirm('${n}번 비밀번호를 초기화할까요? 다음에 들어올 때 새로 정해요.\\nReset No. ${n}\\'s password?',()=>tStu(${n},'reset'))">↺ 초기화 · Reset</button>` : ''}
+        ${x.registered || x.has_card || x.replies ? `<button class="small ghost" onclick="tMove(${n})">🔀 반 옮기기 · Move</button>` : ''}
         ${x.registered || x.has_card || x.replies ? `<button class="small red" onclick="uiConfirm('${n}번 학생의 문진표, 답장, 도장, 비밀번호를 모두 지울까요?\\nDelete all of No. ${n}\\'s data?',()=>tStu(${n},'delete'))">🗑 기록 삭제 · Delete</button>` : ''}</td></tr>`; }).join('')}</table>`;
 }
 function tStuPin(n) {
   uiModal(`<h2>🔑 ${TCLS}반 ${n}번 새 비밀번호</h2><p class="eni">New password for No. ${n} (4-12)</p><input id="tsp" maxlength="12" style="width:220px" autocomplete="off">`,
     () => tStu(n, 'setpin', document.getElementById('tsp').value.trim()), '저장<span class="en">Save</span>');
   setTimeout(() => { const e = document.getElementById('tsp'); if (e) e.focus(); }, 50);
+}
+function tMove(n) {
+  uiModal(`<h2>🔀 ${TCLS}반 ${n}번 기록 옮기기</h2><p class="eni">Move this student's password, forms and replies</p>
+    <p>옮길 곳 <select id="mvC" style="font-size:22px">${[1, 2, 3, 4].map(c => `<option value="${c}" ${c === TCLS ? '' : ''}>${c}반</option>`).join('')}</select>
+      <input id="mvN" type="number" min="1" max="99" value="${n}" style="width:100px;font-size:22px"> 번</p>
+    <p class="muted">비밀번호도 그대로 옮겨져서, 학생은 원래 비밀번호로 새 반에 들어가면 돼요.</p>`, async () => {
+    const c = +document.getElementById('mvC').value, no = +document.getElementById('mvN').value;
+    if (!no || (c === TCLS && no === n)) return toast('옮길 반과 번호를 확인해 주세요\nCheck the class and number.');
+    try {
+      const r = await rpc('hn_teacher_move', { p_pw: TPW, p_class: TCLS, p_no: n, p_to_class: c, p_to_no: no });
+      toast(r === 'ok' ? `${c}반 ${no}번으로 옮겼어요\nMoved.` : r === 'exists' ? `${c}반 ${no}번에 이미 기록이 있어요. 그 기록을 먼저 지워 주세요\nThat number already has data.` : '다시 해 주세요\nPlease try again.', 3200);
+    } catch (e) { return serverError(e); }
+    GROUPS = null; teacherMain();
+  }, '옮기기<span class="en">Move</span>');
+  setTimeout(() => { const sel = document.getElementById('mvC'); if (sel) sel.value = String(TCLS === 1 ? 2 : 1); }, 0);
 }
 async function tStu(n, action, pin) {
   if (action === 'setpin' && (!pin || pin.length < 4)) { toast('4자 이상으로 써 주세요\nUse 4+ characters.'); return; }
