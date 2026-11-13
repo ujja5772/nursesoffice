@@ -444,6 +444,8 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .menu button.shut{opacity:.55;filter:grayscale(.6)}
+.slots{display:flex;gap:10px;margin:0 0 14px}.slots button{flex:1;background:#fff;color:var(--ink);border:3px solid var(--line);box-shadow:none;position:relative;font-size:20px}.slots button.on{border-color:var(--red);background:#fff1f2}
+.qrgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.qrcell{border:3px solid var(--line);border-radius:18px;padding:12px;text-align:center;display:grid;gap:8px;justify-items:center}.qrcell canvas{width:100%;max-width:200px;height:auto}
 </style>
 </head>
 <body>
@@ -502,7 +504,8 @@ function demoBadge() {
   document.body.appendChild(d);
 }
 function demoRpc(fn, a) {
-  const c = DB.cards, mine = (cls, no) => c.find(x => x.class_no === cls && x.student_no === no);
+  const c = DB.cards, mine = (cls, no, slot = 1) => c.find(x => x.class_no === cls && x.student_no === no && (x.slot || 1) === slot);
+  const mineAll = (cls, no) => c.filter(x => x.class_no === cls && x.student_no === no);
   const sk = (cls, no) => cls + '-' + no;
   const pinOk = p => DB.students[sk(a.p_class, a.p_no)] != null && DB.students[sk(a.p_class, a.p_no)].pin === (p || '');
   switch (fn) {
@@ -519,27 +522,27 @@ function demoRpc(fn, a) {
       const k = sk(a.p_class, a.p_no);
       if (a.p_action === 'reset') delete DB.students[k];
       else if (a.p_action === 'setpin') DB.students[k] = { pin: a.p_pin, last: (DB.students[k] || {}).last || null };
-      else if (a.p_action === 'delete') { const m = mine(a.p_class, a.p_no);
-        DB.replies = DB.replies.filter(r => !(r.class_no === a.p_class && r.reply_no === a.p_no) && !(m && r.card_id === m.id));
-        if (m) c.splice(c.indexOf(m), 1); delete DB.students[k]; }
+      else if (a.p_action === 'delete') { const ms = mineAll(a.p_class, a.p_no), ids = ms.map(m => m.id);
+        DB.replies = DB.replies.filter(r => !(r.class_no === a.p_class && r.reply_no === a.p_no) && !ids.includes(r.card_id));
+        ms.forEach(m => c.splice(c.indexOf(m), 1)); delete DB.students[k]; }
       return 'ok';
     }
     case 'hn_my_card': {
       if (!pinOk(a.p_pin)) return null;
-      const m = mine(a.p_class, a.p_no), R = DB.replies.filter(r => r.lines);
-      return { card: m || null, replies: m ? R.filter(r => r.card_id === m.id).map(r => ({ id: r.id, lines: r.lines, meds: r.meds, best: !!r.best })) : [],
+      const R = DB.replies.filter(r => r.lines);
+      return { cards: mineAll(a.p_class, a.p_no).sort((x, y) => (x.slot || 1) - (y.slot || 1)).map(m => ({ ...m, slot: m.slot || 1, replies: R.filter(r => r.card_id === m.id).map(r => ({ id: r.id, lines: r.lines, meds: r.meds, best: !!r.best })) })),
         stamps: R.filter(r => r.class_no === a.p_class && r.reply_no === a.p_no).map(r => { const cc = c.find(x => x.id === r.card_id) || {}; return { avatar: cc.avatar, guest_name: cc.guest_name, best: !!r.best }; }) };
     }
     case 'hn_pick_best': {
       if (!pinOk(a.p_pin)) return 'pin';
-      const m = mine(a.p_class, a.p_no), t = m && DB.replies.find(r => r.id === a.p_reply && r.card_id === m.id && r.lines);
+      const t = DB.replies.find(r => r.id === a.p_reply && r.lines && mineAll(a.p_class, a.p_no).some(x => x.id === r.card_id)), m = t && c.find(x => x.id === t.card_id);
       if (!t) return 'fail';
       if (t.best) return 'ok';
       if (DB.replies.filter(r => r.card_id === m.id && r.best).length >= 2) return 'limit';
       t.best = true;
       return 'ok';
     }
-    case 'hn_edit_card': { if (!pinOk(a.p_pin)) return 'pin'; const m = mine(a.p_class, a.p_no); if (!m) return 'fail'; m.guest_name = a.p_guest || m.guest_name; m.card_lines = a.p_lines; return 'ok'; }
+    case 'hn_edit_card': { if (!pinOk(a.p_pin)) return 'pin'; const m = mine(a.p_class, a.p_no, a.p_slot || 1); if (!m) return 'fail'; m.guest_name = a.p_guest || m.guest_name; m.card_lines = a.p_lines; return 'ok'; }
     case 'hn_edit_reply': { if (!pinOk(a.p_pin)) return 'pin'; const r = DB.replies.find(x => x.id === a.p_reply && x.reply_no === a.p_no && x.class_no === a.p_class && x.lines); if (!r) return 'fail'; r.lines = a.p_lines; return 'ok'; }
     case 'hn_my_replies': { if (!pinOk(a.p_pin)) return null; return DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === a.p_no && r.lines).map(r => { const cc = c.find(x => x.id === r.card_id) || {}; return { id: r.id, lines: r.lines, best: !!r.best, guest_name: cc.guest_name, avatar: cc.avatar, card_lines: cc.card_lines }; }); }
     case 'hn_teacher_edit_card': { const m = c.find(x => x.id === a.p_card); if (!m) return false; if (a.p_guest) m.guest_name = a.p_guest; if (Array.isArray(a.p_lines)) m.card_lines = a.p_lines; return true; }
@@ -547,18 +550,19 @@ function demoRpc(fn, a) {
     case 'hn_teacher_report': {
       const nos = new Set([...Object.keys(DB.students).filter(k => k.startsWith(a.p_class + '-')).map(k => +k.split('-')[1]),
         ...c.filter(x => x.class_no === a.p_class).map(x => x.student_no), ...DB.replies.filter(r => r.class_no === a.p_class).map(r => r.reply_no)]);
-      return [...nos].sort((x, y) => x - y).map(no => { const m = mine(a.p_class, no);
-        return { no, card: m ? { guest_name: m.guest_name, symptoms: m.symptoms, feel: m.feel, extra: m.extra, lines: m.card_lines } : null,
+      const cj = m => m ? { guest_name: m.guest_name, symptoms: m.symptoms, feel: m.feel, extra: m.extra, lines: m.card_lines } : null;
+      return [...nos].sort((x, y) => x - y).map(no => { const m = mine(a.p_class, no), ids = mineAll(a.p_class, no).map(x => x.id);
+        return { no, card: cj(m), card2: cj(mine(a.p_class, no, 2)),
           written: DB.replies.filter(r => r.class_no === a.p_class && r.reply_no === no && r.lines).map(r => ({ lines: r.lines, best: !!r.best })),
-          received: m ? DB.replies.filter(r => r.card_id === m.id && r.lines).length : 0 }; });
+          received: DB.replies.filter(r => ids.includes(r.card_id) && r.lines).length }; });
     }
     case 'hn_class_progress': return DB.replies.filter(r => r.lines && r.class_no === a.p_class).length;
     case 'hn_teacher_del_reply': DB.replies = DB.replies.filter(r => r.id !== a.p_reply); return true;
     case 'hn_submit_card': {
       if (!pinOk(a.p_pin)) return 'pin';
-      const m = mine(a.p_class, a.p_no);
+      const m = mine(a.p_class, a.p_no, a.p_slot || 1);
       if (m && DB.replies.some(r => r.card_id === m.id && r.lines)) return 'locked';
-      const row = { id: m ? m.id : 'demo' + DB.seq++, class_no: a.p_class, student_no: a.p_no, student_name: a.p_name, avatar: a.p_avatar,
+      const row = { id: m ? m.id : 'demo' + DB.seq++, class_no: a.p_class, student_no: a.p_no, slot: a.p_slot || 1, student_name: a.p_name, avatar: a.p_avatar,
         guest_name: a.p_guest, symptoms: a.p_symptoms, feel: a.p_feel, extra: a.p_extra, card_lines: a.p_lines, hidden: false, featured: m ? m.featured : false };
       if (m) Object.assign(m, row, { assigned_no: null }); else c.push(row);
       return 'ok';
@@ -569,7 +573,7 @@ function demoRpc(fn, a) {
       if (!p) {
         const cnt = id => DB.replies.filter(r => r.card_id === id).length;
         const pool = shuffle(c.filter(x => x.class_no === a.p_class && x.student_no !== a.p_no && !x.hidden
-          && !DB.replies.some(r => r.card_id === x.id && r.reply_no === a.p_no))).sort((x, y) => cnt(x.id) - cnt(y.id));
+          && !DB.replies.some(r => r.reply_no === a.p_no && r.class_no === a.p_class && c.some(y => y.id === r.card_id && y.student_no === x.student_no)))).sort((x, y) => cnt(x.id) - cnt(y.id));
         if (!pool.length) return null;
         p = { id: DB.seq++, card_id: pool[0].id, class_no: a.p_class, reply_no: a.p_no, lines: null };
         DB.replies.push(p);
@@ -586,7 +590,7 @@ function demoRpc(fn, a) {
     }
     case 'hn_featured': return c.filter(x => x.featured && !x.hidden);
     case 'hn_has_pw': case 'hn_teacher_login': case 'hn_setup_pw': case 'hn_change_pw': return true;
-    case 'hn_teacher_data': return { cards: c.filter(x => x.class_no === a.p_class).sort((x, y) => x.student_no - y.student_no)
+    case 'hn_teacher_data': return { cards: c.filter(x => x.class_no === a.p_class).sort((x, y) => x.student_no - y.student_no || (x.slot || 1) - (y.slot || 1))
         .map(x => ({ ...x, replies: DB.replies.filter(r => r.card_id === x.id && r.lines).map(r => ({ id: r.id, reply_no: r.reply_no, lines: r.lines, best: !!r.best })) })),
       replies_total: DB.replies.filter(r => r.lines && r.class_no === a.p_class).length, scores: [], numbers: DB.numbers[a.p_class] || '' };
     case 'hn_set_numbers': DB.numbers[a.p_class] = a.p_numbers; return true;
@@ -816,6 +820,13 @@ function boardGate(go) {
   }, '열기<span class="en">Open</span>');
   setTimeout(() => { const i = document.getElementById('bpw'); if (i) { i.focus(); i.onkeydown = e => { if (e.key === 'Enter') i.closest('.card').querySelector('[data-ok]').click(); }; } }, 30);
 }
+// 반별 QR: 주소에 ?class=3 이 있으면 그 반으로 고정하고 바로 문진표 로그인 화면으로
+let CLS_FIX = 0;
+try {
+  const q = new URLSearchParams(location.search).get('class');
+  if (q && /^[1-4]$/.test(q)) CLS_FIX = +q;
+} catch (e) {}
+function clsUnfix() { CLS_FIX = 0; writeLogin(); }
 function home() {
   stopTimer();
   $app.innerHTML = `
@@ -946,7 +957,9 @@ async function writeLogin() {
   $app.innerHTML = `<div class="wrap">
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2></div>
     <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
-      <label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${[1,2,3,4].map(c => `<option ${last.cls == c ? 'selected' : ''} value="${c}">5학년 ${c}반</option>`).join('')}</select></label>
+      ${CLS_FIX ? `<div class="row" style="justify-content:space-between"><span class="ko" style="font-size:30px">🏫 5학년 <b style="color:var(--red)">${CLS_FIX}</b>반 <span class="eni">Class ${CLS_FIX}</span></span>
+          <button class="small ghost" onclick="clsUnfix()">반 바꾸기 · Change</button><input type="hidden" id="wCls" value="${CLS_FIX}"></div>`
+        : `<label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${[1,2,3,4].map(c => `<option ${last.cls == c ? 'selected' : ''} value="${c}">5학년 ${c}반</option>`).join('')}</select></label>`}
       <label>번호 <span class="eni">No.</span> <span id="numBox"><input id="wNo" type="number" min="1" max="99" style="width:120px"></span></label>
       <label>비밀번호 <span class="eni">Password</span> <input id="wPin" type="password" maxlength="12" style="width:200px" onkeydown="if(event.key==='Enter')writeEnter()" autocomplete="off"></label>
       <p class="muted" style="margin:0">처음이면 비밀번호를 비워 두고 들어가기를 눌러요. 내 비밀번호를 정할 수 있어요.<span class="en">First time? Leave it empty and press Enter to make your password.</span></p>
@@ -1007,20 +1020,26 @@ async function writeHub(room) {
   loadWords();
   let r = null;
   try { r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }); } catch (e) { serverError(e); }
-  const mine = r && r.card, replies = (r && r.replies) || [], stamps = (r && r.stamps) || [];
+  const cards = (r && (r.cards || (r.card ? [{ ...r.card, slot: 1, replies: r.replies || [] }] : []))) || [], stamps = (r && r.stamps) || [];
+  const mine = cards.find(c => (c.slot || 1) === PSLOT) || null, replies = (mine && mine.replies) || [];
   MYCARD = mine;
   if (ROOM === 'nurse') { try { MYREPLIES = await rpc('hn_my_replies', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }) || []; } catch (e) { MYREPLIES = []; } }
   const tabs = `<div class="rooms">
-      <button class="${ROOM === 'patient' ? 'on' : ''}" onclick="writeHub('patient')">🤒 나는 손님<span class="en">Patient room</span>${replies.length && !replies.some(x => x.best) ? '<i class="dot"></i>' : ''}</button>
+      <button class="${ROOM === 'patient' ? 'on' : ''}" onclick="writeHub('patient')">🤒 나는 손님<span class="en">Patient room</span>${cards.some(c => (c.replies || []).length && !c.replies.some(x => x.best)) ? '<i class="dot"></i>' : ''}</button>
       <button class="${ROOM === 'nurse' ? 'on' : ''}" onclick="writeHub('nurse')">👩‍⚕️ 나는 보건 선생님<span class="en">Nurse room</span></button></div>`;
   let body = '';
   if (ROOM === 'patient') {
     const locked = replies.length > 0, nBest = replies.filter(x => x.best).length, left = 2 - nBest;
-    body = `<div class="hub2">
+    const slotTab = n => { const cc = cards.find(c => (c.slot || 1) === n), nr = cc ? (cc.replies || []).length : 0, todo = cc && nr && !cc.replies.some(x => x.best);
+      return `<button class="${PSLOT === n ? 'on' : ''}" onclick="PSLOT=${n};writeHub('patient')">${cc ? pic(avImg(cc.avatar, 'happy'), avEmoji(cc.avatar), '', 'width:34px;height:34px;font-size:28px;vertical-align:middle') : '➕'} 문진표 ${n} <span class="eni">${cc ? esc(cc.guest_name || '') + ' · 처방 ' + nr : 'Form ' + n}</span>${todo ? '<i class="dot"></i>' : ''}</button>`; };
+    body = `<div class="slots">${slotTab(1)}${slotTab(2)}</div>
+      <div class="hub2">
       <div>
-        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 class="ko" style="font-size:24px;margin:0">내 문진표 <span class="eni">My form</span></h3>
-          <button class="red small" onclick="${locked ? 'editMyCard(MYCARD)' : 'guestStart()'}">${mine ? '✏️ 고치기 · Edit' : '✏️ 문진표 쓰기 · Write'}</button></div>
-        ${mine ? cardView(mine) : `<div class="panel center"><p class="ko" style="font-size:24px">아직 쓴 문진표가 없어요.<span class="en">No form yet.</span></p><button class="red" onclick="guestStart()">✏️ 문진표 쓰기<span class="en">Write a form</span></button></div>`}
+        <div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 class="ko" style="font-size:24px;margin:0">내 문진표 ${PSLOT} <span class="eni">My form ${PSLOT}</span></h3>
+          <button class="red small" onclick="${locked ? 'editMyCard(MYCARD)' : `guestStart(${PSLOT})`}">${mine ? '✏️ 고치기 · Edit' : '✏️ 문진표 쓰기 · Write'}</button></div>
+        ${mine ? cardView(mine) : `<div class="panel center"><p class="ko" style="font-size:24px">${PSLOT === 2 ? '두 번째 손님도 만들어 볼까요?<span class="en">Make another patient!</span>' : '아직 쓴 문진표가 없어요.<span class="en">No form yet.</span>'}</p>
+          ${PSLOT === 2 ? '<p class="muted">첫 번째와 다른 손님, 다른 증상으로 써 봐요.<span class="en">Try a different patient and symptoms.</span></p>' : ''}
+          <button class="red" onclick="guestStart(${PSLOT})">✏️ 문진표 쓰기<span class="en">Write a form</span></button></div>`}
         ${locked ? '<p class="muted">답장을 받은 뒤에는 손님 이름과 문장만 고칠 수 있어요.<span class="en">After replies, you can fix the name and sentences.</span></p>' : ''}
       </div>
       <div>
@@ -1157,7 +1176,7 @@ const dkey = kind => `hn_draft_${kind}_${ME.cls}_${ME.no}`;
 function draftSave(kind, data) { try { localStorage.setItem(dkey(kind), JSON.stringify({ t: Date.now(), data })); } catch (e) {} }
 function draftLoad(kind, maxH = 72) { try { const v = JSON.parse(localStorage.getItem(dkey(kind))); return v && Date.now() - v.t < maxH * 3600e3 ? v.data : null; } catch (e) { return null; } }
 function draftClear(kind) { try { localStorage.removeItem(dkey(kind)); } catch (e) {} }
-const wSave = () => { if (W) draftSave('form', { ...W }); };
+const wSave = () => { if (W) draftSave('form' + (W.slot || 1), { ...W }); };
 const nrSave = () => { if (NR) draftSave('reply', { id: NR.card.id, sel: [...NR.sel], step: NR.step, lines: NR.lines }); };
 
 /* ---- 글 고치기 창 (학생·교사 공용) ---- */
@@ -1185,7 +1204,7 @@ function editMyCard(card) {
   const rest = (card.card_lines || []).slice(1);
   lineEditor('✏️ 내 문진표 고치기 <span class="eni">Edit my form</span>', card.guest_name || '', rest, async (g, ls) => {
     const lines = [`Hello, I'm ${g.replace(/\b[a-z]/g, c => c.toUpperCase())}.`, ...ls];
-    const r = await rpc('hn_edit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_guest: g.replace(/\b[a-z]/g, c => c.toUpperCase()), p_lines: lines });
+    const r = await rpc('hn_edit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_guest: g.replace(/\b[a-z]/g, c => c.toUpperCase()), p_lines: lines, p_slot: card.slot || 1 });
     if (r === 'pin') { pinFail(); return; }
     if (r !== 'ok') { toast('다시 해 주세요\nPlease try again.'); return false; }
     toast('고쳤어요!\nSaved!'); writeHub('patient');
@@ -1199,7 +1218,7 @@ function editMyReply(rp) {
     toast('고쳤어요!\nSaved!'); writeHub('nurse');
   });
 }
-let MYCARD = null, MYREPLIES = [];
+let MYCARD = null, MYREPLIES = [], PSLOT = 1;
 function pickBest(id, left) {
   uiConfirm(left === 2 ? '이 처방에 💖 스페셜 도장을 줄까요? 준 도장은 다시 가져올 수 없어요.\nGive a special stamp? You can\'t take it back.'
     : '마지막 💖 하나를 이 처방에 줄까요? 이번이 마지막이에요.\nGive your last special stamp?', () => pickBestGo(id));
@@ -1220,12 +1239,14 @@ function cardView(c) {
 }
 
 /* ---- ① guest card ---- */
-async function guestStart() {
-  let mine = null;
-  try { const r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no }); mine = r && r.card; } catch (e) {}
-  W = { step: 0, avatar: mine?.avatar || null, guest: mine?.guest_name || '', sym: mine?.symptoms || [], feel: mine?.feel || '', extras: (mine?.extra || '').split('\n').concat(['', '']).slice(0, 2), typed: {} };
-  const d = draftLoad('form');
-  if (d && d.step != null) { W = { ...W, ...d }; toast('💾 쓰던 문진표를 불러왔어요\nYour draft is back!'); }
+async function guestStart(slot = PSLOT) {
+  let mine = null, other = null;
+  try { const r = await rpc('hn_my_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no });
+    const cs = (r && (r.cards || (r.card ? [{ ...r.card, slot: 1 }] : []))) || [];
+    mine = cs.find(c => (c.slot || 1) === slot) || null; other = cs.find(c => (c.slot || 1) !== slot) || null; } catch (e) {}
+  W = { slot, other: other ? (other.guest_name || '') : '', step: 0, avatar: mine?.avatar || null, guest: mine?.guest_name || '', sym: mine?.symptoms || [], feel: mine?.feel || '', extras: (mine?.extra || '').split('\n').concat(['', '']).slice(0, 2), typed: {} };
+  const d = draftLoad('form' + slot);
+  if (d && d.step != null) { W = { ...W, ...d, slot, other: W.other }; toast('💾 쓰던 문진표를 불러왔어요\nYour draft is back!'); }
   guestDraw();
 }
 function guestTargets() {
@@ -1262,7 +1283,7 @@ function guestDraw() {
       <p style="margin-top:18px">손님 이름 <span class="eni">Patient's name (English)</span> &nbsp; <b>Hello, I'm</b> <input id="gName" maxlength="15" value="${esc(W.guest)}" placeholder="Minho / Snowy" style="width:220px"> <b>.</b></p>
       <p class="muted">내 영어 이름도 좋고, 엉뚱한 손님 이름도 좋아요.<span class="en">Use your English name or a funny name.</span></p>`;
   } else if (s === 1) {
-    body = `<h3 class="ko" style="font-size:26px;margin-top:0">어디가 아픈가요? (1~4개)<span class="en">What's wrong? (Choose 1 to 4)</span></h3>
+    body = `<h3 class="ko" style="font-size:26px;margin-top:0">어디가 아픈가요? (2~4개)<span class="en">What's wrong? (Choose 2 to 4)</span></h3>
       <div class="syms">${SYM_KEYS.map(k => `<button class="symbtn ${W.sym.includes(k) ? 'sel' : ''}" onclick="symTap('${k}')"><span class="e">${SYM[k].emoji}</span>${SYM[k].en}<span class="ko" style="font-size:15px">${SYM[k].ko}</span></button>`).join('')}</div>
       <h3 class="ko" style="font-size:24px">기분은 어때요? (선택)<span class="en">How do you feel? (Optional)</span></h3>
       <div class="row">${[['', '🙂 없음 · None'], ['tired', '🥱 tired 피곤해요'], ['thirsty', '🥵 thirsty 목말라요']].map(f => `<button class="${W.feel === f[0] ? '' : 'ghost'}" onclick="W.feel='${f[0]}';guestDraw()">${f[1]}</button>`).join('')}</div>`;
@@ -1327,11 +1348,14 @@ async function guestNext() {
     if (!/^[A-Za-z][A-Za-z .'-]{0,14}$/.test(W.guest)) return toast('손님 이름을 영어로 써 주세요\nWrite the name in English.');
     W.guest = W.guest.replace(/\b[a-z]/g, c => c.toUpperCase());
   }
-  if (W.step === 1 && !W.sym.length) return toast('아픈 곳을 골라 주세요\nChoose what\'s wrong.');
+  if (W.step === 1 && W.sym.length < 2) return toast(W.sym.length ? '아픈 곳을 하나 더 골라 주세요 (2~4개)\nChoose at least 2.' : '아픈 곳을 2개 이상 골라 주세요\nChoose 2 to 4.');
   if (W.step === 2) {
     const bad = guestTargets().filter(t => !t.want.includes(norm(W.typed[t.id])));
     if (bad.length) { toast('✏️ 표시된 문장을 다시 확인해요\nCheck the ✏️ sentences.'); bad.forEach(t => shakeEl('#in_' + t.id)); return; }
     if (W.extras.some(x => x && !engOK(x))) return toast('더 하고 싶은 말은 영어 문장으로 써요\nWrite an English sentence, please.');
+    // 증상은 '증상 고르기'로만: 더 하고 싶은 말에 증상을 쓰면 친구가 약을 고를 때 헷갈려요
+    const symIss = extraSymIssues(W.extras);
+    if (symIss.length) { showIssues('spellP', symIss); toast('🩺 증상은 위에서 골라요\nChoose symptoms above.'); [0, 1].forEach(i => W.extras[i] && shakeEl('#in_x' + i)); return; }
     if (W.extras.some(Boolean)) {
       await loadWords();
       const iss = englishIssues(W.extras);
@@ -1340,6 +1364,28 @@ async function guestNext() {
     }
   }
   W.step++; guestDraw();
+}
+const SYM_RE = {
+  cold: /\b(?:have|has|had|got|get|a)\s+(?:a\s+)?(?:bad\s+)?cold\b(?!\s+(?:water|drink|juice|milk|ice|food|weather|day|wind|room|noodles?))/i,
+  fever: /\bfever\b/i, headache: /\bhead ?ache\b/i, runnynose: /\brunny\s+nose\b/i, stomachache: /\bstomach ?ache\b/i
+};
+function extraSymIssues(extras) {
+  const out = [];
+  SYM_KEYS.forEach(k => {
+    if (!extras.some(x => x && SYM_RE[k].test(x))) return;
+    const s = SYM[k];
+    if (W.sym.includes(k)) out.push(`🩺 <b>${s.en}</b>는 위 칸에 이미 썼어요. 여기에는 <b>아픈 이유</b>나 <b>기분</b>을 써요. <span class="eni">You already wrote it above. Write why, or how you feel.</span>`);
+    else out.push(`🩺 <b>${s.en}</b>(${s.ko})도 아프다면 <b>증상으로 골라야</b> 친구가 알맞은 약을 줄 수 있어요.
+      ${W.sym.length < 4 ? `<button class="small" onclick="addSym('${k}')">➕ ${s.emoji} ${s.en} 증상 추가</button>` : ''} <span class="eni">Add it as a symptom so your friend can give the right medicine.</span>`);
+  });
+  return out;
+}
+function addSym(k) {
+  saveStepInputs();
+  if (!W.sym.includes(k) && W.sym.length < 4) W.sym.push(k);
+  W.extras = W.extras.map(x => x && SYM_RE[k].test(x) ? '' : x);
+  wSave(); guestDraw();
+  toast(`➕ ${SYM[k].en} 추가! 새 칸에 문장을 써요\nWrite the new sentence.`, 2600);
 }
 function guestCard() {
   const T = guestTargets();
@@ -1350,10 +1396,13 @@ function guestCard() {
 }
 async function guestSend() {
   const c = guestCard();
+  if (W.other && (c.guest_name || '').trim().toLowerCase() === W.other.trim().toLowerCase()) {
+    toast('첫 번째 손님과 다른 이름으로 써요\nUse a different patient name.', 2600); W.step = 0; return guestDraw();
+  }
   try {
     const r = await rpc('hn_submit_card', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_name: ME.name, p_avatar: c.avatar, p_guest: c.guest_name,
-      p_symptoms: c.symptoms, p_feel: c.feel, p_extra: c.extra, p_lines: c.card_lines });
-    if (r === 'ok') { draftClear('form'); toast('✉️ 보건실로 보냈어요!\nSent!'); writeHub('patient'); }
+      p_symptoms: c.symptoms, p_feel: c.feel, p_extra: c.extra, p_lines: c.card_lines, p_slot: W.slot || 1 });
+    if (r === 'ok') { PSLOT = W.slot || 1; draftClear('form' + PSLOT); toast('✉️ 보건실로 보냈어요!\nSent!'); writeHub('patient'); }
     else if (r === 'pin') pinFail();
     else if (r === 'locked') toast('이미 답장을 받은 문진표예요\nThis form already has a reply.');
     else toast('다시 확인해 주세요\nPlease check again.');
@@ -1486,7 +1535,7 @@ async function teacherMain() {
   if (TTAB === 'cards') {
     body = `<table><tr><th>번호<span class="en">No.</span></th><th>문진표<span class="en">Patient form</span></th><th>보건 선생님 답장<span class="en">Nurse reply</span></th><th>상태<span class="en">Status</span></th><th></th></tr>
       ${cards.map(c => `<tr>
-        <td>${c.student_no}</td>
+        <td>${c.student_no}${(c.slot || 1) === 2 ? ' <span class="pill">②</span>' : ''}</td>
         <td>${c.guest_name ? `<b>${esc(c.guest_name)}</b><br>` : ''}${(c.card_lines || []).map(esc).join('<br>')}<br><button class="small ghost" onclick="tEditCard('${c.id}')">✏️ 고치기 · Edit</button></td>
         <td>${c.replies.length ? c.replies.map(r => `<div class="trep">${r.best ? '💖 ' : ''}<b>${r.reply_no}번</b> ${(r.lines || []).map(esc).join(' ')} <button class="small ghost" onclick="tEditReply(${r.id})">✏️</button><button class="small ghost" onclick="uiConfirm('이 답장을 지울까요?\\nDelete this reply?',()=>tDelReply(${r.id}))">✕</button></div>`).join('') : '<span class="muted">대기 · Waiting</span>'}</td>
         <td>${c.hidden ? '<span class="pill r">숨김 · Hidden</span>' : ''}</td>
@@ -1509,6 +1558,12 @@ async function teacherMain() {
       <button class="small red" style="margin-top:10px" onclick="uiConfirm('${TCLS}반 게임 기록을 모두 지울까요?',tClearScores)">${TCLS}반 기록 지우기</button>`;
   } else if (TTAB === 'script') {
     body = scriptTab(cards);
+  } else if (TTAB === 'qr') {
+    body = `<p class="ko" style="margin:0 0 6px">학생이 크롬북 카메라로 찍으면 <b>그 반이 정해진 채로</b> 문진표 로그인 화면이 열려요. 학생은 번호와 비밀번호만 넣으면 돼요.</p>
+      <p class="muted" style="margin:0 0 12px">반을 잘못 찍었으면 로그인 화면의 <b>반 바꾸기</b>를 누르면 돼요.</p>
+      <div class="qrgrid">${[1, 2, 3, 4].map(c => `<div class="qrcell"><div class="ko" style="font-size:28px">5학년 ${c}반</div><div id="qr${c}"></div>
+        <button class="small" onclick="qrBig(${c})">🔍 크게 보기 · Big</button></div>`).join('')}</div>`;
+    setTimeout(async () => { try { await loadQR(); [1, 2, 3, 4].forEach(c => { const b = document.getElementById('qr' + c); if (b) drawQR(b, classURL(c), 200); }); } catch (e) {} }, 0);
   } else if (TTAB === 'set') {
     body = `<p>학생 번호 (범위는 - , 여러 개는 쉼표). 예: <b>1-15, 51-60</b><span class="en">Student numbers (use - for ranges, commas between). e.g. 1-15, 51-60</span></p>
       <div class="row"><input id="nums" style="flex:1" value="${esc(TD.numbers || '')}"><button onclick="tSaveNums()">저장<span class="en">Save</span></button></div>
@@ -1522,12 +1577,34 @@ async function teacherMain() {
       <div class="tabs">${[1,2,3,4].map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
     <div class="panel">
       <div class="row" style="margin-bottom:12px;justify-content:space-between">
-        <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['set', '설정<span class="en">Settings</span>']]
+        <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['qr', '📱 반별 QR<span class="en">Class QR</span>'], ['set', '설정<span class="en">Settings</span>']]
           .map(t => `<button class="${TTAB === t[0] ? 'on' : ''}" onclick="TTAB='${t[0]}';teacherMain()">${t[1]}</button>`).join('')}</div>
         <button class="small ghost" onclick="teacherMain()">🔄 새로고침 · Refresh</button>
       </div>${body}</div></div>`;
 }
 let TSTU = null, TREP = [], TCOM = {};
+/* ---- 반별 QR ---- */
+const classURL = c => location.href.split('#')[0].split('?')[0] + '?class=' + c;
+function loadQR() {
+  if (window.QRCodeLib) return Promise.resolve();
+  return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'qr.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+}
+function drawQR(box, text, size) {
+  const q = new QRCodeLib(-1, QRErrLevel.M); q.addData(text); q.make();
+  const n = q.getModuleCount(), cell = Math.max(2, Math.floor(size / (n + 4))), cv = document.createElement('canvas');
+  cv.width = cv.height = cell * (n + 4); const x = cv.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = '#000';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) x.fillRect((c + 2) * cell, (r + 2) * cell, cell, cell);
+  box.innerHTML = ''; box.appendChild(cv);
+}
+async function qrBig(c) {
+  const d = document.createElement('div'); d.className = 'banner'; d.onclick = e => { if (e.target === d) d.remove(); };
+  d.innerHTML = `<div class="card center" style="max-width:720px"><p class="ko" style="font-size:40px;margin:0">📱 5학년 <b style="color:var(--red)">${c}반</b> 문진표</p>
+    <p class="eni" style="font-size:22px;margin:4px 0 10px">Class ${c} · Scan to enter</p><div id="qrB" style="display:inline-block"></div>
+    <div><button class="ghost" style="margin-top:12px" onclick="this.closest('.banner').remove()">닫기<span class="en">Close</span></button></div></div>`;
+  document.body.appendChild(d);
+  try { await loadQR(); drawQR(document.getElementById('qrB'), classURL(c), 460); } catch (e) { document.getElementById('qrB').textContent = classURL(c); }
+}
 function tFindCard(id) { return (TD.cards || []).find(c => c.id === id); }
 function tFindReply(id) { for (const c of TD.cards || []) { const r = (c.replies || []).find(x => x.id === id); if (r) return r; } return null; }
 function tEditCard(id) {
@@ -1551,7 +1628,9 @@ function tEditReply(id) {
 /* ---- 성적표 문구 (학생 쓰기 내용을 바탕으로 자동 작성, ~함/~임/~됨) ---- */
 const pickV = (arr, seed) => arr[Math.abs(seed) % arr.length];
 function makeComment(x) {
-  const no = x.no, card = x.card, W = x.written || [];
+  const no = x.no, W = x.written || [];
+  const card = x.card && x.card2 ? { ...x.card, symptoms: [...new Set([...(x.card.symptoms || []), ...(x.card2.symptoms || [])])],
+    extra: [x.card.extra, x.card2.extra].filter(Boolean).join('\n'), lines: [...(x.card.lines || []), ...(x.card2.lines || [])] } : (x.card || x.card2);
   const out = [];
   if (card) {
     const lines = card.lines || [], syms = (card.symptoms || []).filter(k => SYM[k]);
@@ -1590,7 +1669,7 @@ function reportTab() {
       <button class="ghost small" onclick="uiConfirm('문구를 처음 상태로 다시 만들까요? 고친 내용은 사라져요.\\nRegenerate all comments?',()=>{TREP.forEach(x=>delete TCOM[TCLS+'-'+x.no]);teacherMain()})">🔄 다시 만들기 · Regenerate</button></div>
     <table class="rep"><tr><th>번호</th><th>쓴 글 요약</th><th>성적표 문구 (고칠 수 있어요)</th></tr>
     ${TREP.map(x => `<tr><td><b>${x.no}</b></td>
-      <td class="rep-sum">${x.card ? `📋 ${(x.card.lines || []).slice(1).map(esc).join(' ')}` : '📋 -'}<br>✉️ 처방 ${(x.written || []).length}개 · 💖 ${(x.written || []).filter(r => r.best).length}</td>
+      <td class="rep-sum">${x.card ? `📋 ${(x.card.lines || []).slice(1).map(esc).join(' ')}` : '📋 -'}${x.card2 ? `<br>📋② ${(x.card2.lines || []).slice(1).map(esc).join(' ')}` : ''}<br>✉️ 처방 ${(x.written || []).length}개 · 💖 ${(x.written || []).filter(r => r.best).length}</td>
       <td style="width:55%"><textarea rows="5" oninput="TCOM['${TCLS}-${x.no}']=this.value">${esc(TCOM[TCLS + '-' + x.no])}</textarea></td></tr>`).join('')}</table>`;
 }
 function loadXLSX() {
@@ -1600,7 +1679,7 @@ function loadXLSX() {
 async function reportExcel() {
   try { await loadXLSX(); } catch (e) { return toast('엑셀 도구를 불러오지 못했어요\nCould not load the Excel tool.'); }
   const rows = [['반', '번호', '손님 이름', '문진표', '쓴 처방 수', '받은 💖', '성적표 문구']];
-  TREP.forEach(x => rows.push([`5-${TCLS}`, x.no, x.card ? x.card.guest_name || '' : '', x.card ? (x.card.lines || []).join(' ') : '',
+  TREP.forEach(x => rows.push([`5-${TCLS}`, x.no, x.card ? x.card.guest_name || '' : '', [x.card, x.card2].filter(Boolean).map(k => (k.lines || []).join(' ')).join(' / '),
     (x.written || []).length, (x.written || []).filter(r => r.best).length, TCOM[TCLS + '-' + x.no] || '']));
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 12 }, { wch: 50 }, { wch: 10 }, { wch: 8 }, { wch: 90 }];
@@ -2123,7 +2202,7 @@ function acDone(allClear) {
   </div>`;
 }
 
-home();
+if (new URLSearchParams(location.search).get('class')) writeLogin(); else home();
 </script>
 </body>
 </html>
