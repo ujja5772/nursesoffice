@@ -1541,7 +1541,7 @@ function nrGive() {
 function nrCheck() {
   const v = [0, 1, 2, 3].map(i => { const e = document.getElementById('r' + i); return e ? e.value : ''; });
   NR.lines = v; nrSave();
-  const ok = [norm(v[0]) === "that's too bad", norm(v[1]) === 'take this medicine', engOK(v[2]), !v[3].trim() || engOK(v[3])];
+  const ok = [norm(v[0]) === "that's too bad", ['take this medicine', 'take some medicine'].includes(norm(v[1])), engOK(v[2]), !v[3].trim() || engOK(v[3])];
   ok.forEach((o, i) => { const e = document.getElementById('okr' + i); if (e) e.textContent = i === 3 && !v[3].trim() ? '💬' : o ? '✅' : '✏️'; });
   return ok.every(Boolean);
 }
