@@ -510,6 +510,8 @@ function demoRpc(fn, a) {
   const pinOk = p => DB.students[sk(a.p_class, a.p_no)] != null && DB.students[sk(a.p_class, a.p_no)].pin === (p || '');
   switch (fn) {
     case 'hn_get_numbers': return DB.numbers[a.p_class] || null;
+    case 'hn_ping': return 'ok';
+    case 'hn_bye': return true;
     case 'hn_student_login': { const st = DB.students[sk(a.p_class, a.p_no)]; if (!st) return 'new'; if (st.pin === (a.p_pin || '')) { st.last = new Date().toISOString(); return 'ok'; } return 'wrong'; }
     case 'hn_student_register': { if (DB.students[sk(a.p_class, a.p_no)]) return 'exists'; if ((a.p_pin || '').length < 4) return 'bad'; DB.students[sk(a.p_class, a.p_no)] = { pin: a.p_pin, last: new Date().toISOString() }; return 'ok'; }
     case 'hn_teacher_students': {
@@ -839,6 +841,7 @@ try {
 } catch (e) {}
 function clsUnfix() { CLS_FIX = 0; writeLogin(); }
 function home() {
+  meBye();
   stopTimer();
   $app.innerHTML = `
   <div class="wrap">
@@ -962,8 +965,30 @@ function quizDraw() {
    5차시 WRITING — 보건실 문진표
    ========================================================= */
 let ME = null, W = null;
+/* ---- 한 번호는 한 기기에서만 ---- */
+let DEV = null, HB = null;
+try { DEV = localStorage.getItem('hn_dev'); if (!DEV) { DEV = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('hn_dev', DEV); } } catch (e) { DEV = 'x' + Math.random().toString(36).slice(2); }
+function hbStart() {
+  hbStop();
+  HB = setInterval(async () => {
+    if (!ME) return hbStop();
+    try {
+      const r = await rpc('hn_ping', { p_pin: ME.pin, p_class: ME.cls, p_no: ME.no, p_dev: DEV });
+      if (r === 'kicked') { hbStop(); ME = null; stopTimer();
+        uiModal(`<div style="font-size:70px">🚪</div><p class="ko" style="font-size:26px;margin:0">다른 기기에서 이 번호로 들어왔어요</p><p class="eni">Someone else entered with this number.</p><p>내 번호가 맞는지 확인하고, 이상하면 선생님께 말해요.</p>`, () => writeLogin(), '확인<span class="en">OK</span>');
+        const x = document.querySelector('.banner:last-child [data-x]'); if (x) x.remove(); }
+    } catch (e) {}
+  }, 30000);
+}
+function hbStop() { if (HB) clearInterval(HB); HB = null; }
+function meBye() {
+  if (!ME) return;
+  const m = ME; ME = null; hbStop();
+  try { fetch(`${SUPA}/rest/v1/rpc/hn_bye`, { method: 'POST', keepalive: true, headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_pin: m.pin, p_class: m.cls, p_no: m.no, p_dev: DEV }) }).catch(() => {}); } catch (e) {}
+}
+window.addEventListener('pagehide', meBye);
 async function writeLogin() {
-  stopTimer();
+  stopTimer(); meBye();
   const last = store.get('me') || {};
   $app.innerHTML = `<div class="wrap">
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2></div>
@@ -992,10 +1017,16 @@ async function writeEnter() {
   const pin = document.getElementById('wPin').value.trim();
   if (!no) { toast('번호를 골라 주세요\nChoose your number.'); return; }
   let r = null;
-  try { r = await rpc('hn_student_login', { p_class: cls, p_no: no, p_pin: pin }); } catch (e) { return serverError(e); }
+  try { r = await rpc('hn_student_login', { p_class: cls, p_no: no, p_pin: pin, p_dev: DEV }); } catch (e) { return serverError(e); }
   if (r === 'new') return pinSetup(cls, no);
+  if (r === 'busy') {
+    uiModal(`<div style="font-size:70px">🙋</div><p class="ko" style="font-size:26px;margin:0">${cls}반 ${no}번은 지금 다른 기기에서 쓰고 있어요</p>
+      <p class="eni">This number is being used on another device.</p><p>내 반과 번호가 맞는지 다시 확인해요. 맞는데도 이 화면이 나오면 선생님께 말해요.</p>`, () => {}, '확인<span class="en">OK</span>');
+    const x = document.querySelector('.banner:last-child [data-x]'); if (x) x.remove();
+    return;
+  }
   if (r !== 'ok') { toast('비밀번호가 맞지 않아요. 잊어버렸으면 선생님께 말해요.\nWrong password. Ask your teacher if you forgot.', 3000); shakeEl('#wPin'); return; }
-  ME = { cls, no, pin, name: `${no}번` }; store.set('me', { cls, no });
+  ME = { cls, no, pin, name: `${no}번` }; store.set('me', { cls, no }); hbStart();
   writeHub('patient');
 }
 function pinSetup(cls, no) {
@@ -1018,10 +1049,10 @@ async function pinSave(cls, no) {
   if (a.length < 4) { toast('4자 이상으로 정해요\nUse 4 or more characters.'); return; }
   if (a !== b) { toast('두 비밀번호가 달라요\nThe two passwords are different.'); shakeEl('#np2'); return; }
   let r = null;
-  try { r = await rpc('hn_student_register', { p_class: cls, p_no: no, p_pin: a }); } catch (e) { return serverError(e); }
+  try { r = await rpc('hn_student_register', { p_class: cls, p_no: no, p_pin: a, p_dev: DEV }); } catch (e) { return serverError(e); }
   if (r === 'exists') { toast('이미 비밀번호가 있어요. 다시 들어가 주세요.\nThis number already has a password.', 3000); return writeLogin(); }
   if (r !== 'ok') { toast('다시 확인해 주세요\nPlease check again.'); return; }
-  ME = { cls, no, pin: a, name: `${no}번` }; store.set('me', { cls, no });
+  ME = { cls, no, pin: a, name: `${no}번` }; store.set('me', { cls, no }); hbStart();
   toast('🔑 비밀번호를 정했어요!\nPassword saved!');
   writeHub('patient');
 }
@@ -1736,7 +1767,7 @@ function studentsTab() {
     ${all.map(n => { const x = map[n] || {}; return `<tr>
       <td><b>${n}</b></td>
       <td>${x.registered ? '<span class="pill">✅ 등록됨</span>' : '<span class="pill y">아직 · Not yet</span>'}</td>
-      <td>${x.last_at ? new Date(x.last_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+      <td>${x.online ? `<span class="pill">🟢 접속 중</span> <button class="small ghost" onclick="tStu(${n},'kick')">접속 풀기 · Free</button>` : x.last_at ? new Date(x.last_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
       <td>${x.has_card ? '📋' : '-'}</td><td>${x.replies || 0}</td>
       <td style="white-space:nowrap">
         <button class="small ghost" onclick="tStuPin(${n})">🔑 바꾸기 · Set</button>
@@ -1768,7 +1799,7 @@ async function tStu(n, action, pin) {
   if (action === 'setpin' && (!pin || pin.length < 4)) { toast('4자 이상으로 써 주세요\nUse 4+ characters.'); return; }
   try {
     const r = await rpc('hn_teacher_student', { p_pw: TPW, p_class: TCLS, p_no: n, p_action: action, p_pin: pin || null });
-    toast(r === 'ok' ? ({ setpin: `${n}번 비밀번호를 바꿨어요\nPassword set.`, reset: `${n}번 비밀번호를 초기화했어요\nPassword reset.`, delete: `${n}번 기록을 지웠어요\nDeleted.` })[action] : '다시 해 주세요\nPlease try again.');
+    toast(r === 'ok' ? ({ setpin: `${n}번 비밀번호를 바꿨어요\nPassword set.`, reset: `${n}번 비밀번호를 초기화했어요\nPassword reset.`, delete: `${n}번 기록을 지웠어요\nDeleted.`, kick: `${n}번 접속을 풀었어요\nFreed.` })[action] : '다시 해 주세요\nPlease try again.');
   } catch (e) { return serverError(e); }
   GROUPS = null; teacherMain();
 }
