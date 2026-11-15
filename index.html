@@ -455,7 +455,7 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 <script>
 /* =========================================================
    Nurse's Office (보건실)
-   5학년 영어 11단원 I Have a Headache · 만든 이: Tr. Olivia
+   Nurse's Office · 만든 이: Tr. Olivia
    ========================================================= */
 const SUPA = 'https://kpjbzvcvbhuakevhyruz.supabase.co';
 const KEY  = 'sb_publishable_Q7JPoZ0VkRx4-2t1pj8Hpg_ibbRnrpM';
@@ -602,7 +602,13 @@ function demoRpc(fn, a) {
       return 'ok';
     }
     case 'hn_featured': return c.filter(x => x.featured && !x.hidden);
-    case 'hn_has_pw': case 'hn_teacher_login': case 'hn_setup_pw': case 'hn_change_pw': return true;
+    case 'hn_has_pw': case 'hn_setup_pw': case 'hn_change_pw': return true;
+    case 'hn_teacher_login': return { id: 1, name: '관리자', classes: 4 };
+    case 'hn_teacher_info': return { id: a.p_tid, name: '', classes: 4 };
+    case 'hn_admin_list': return [{ id: 1, name: '관리자', classes: 4, students: Object.keys(DB.students).length, cards: DB.cards.length }];
+    case 'hn_admin_add': case 'hn_teacher_signup': return '2';
+    case 'hn_teacher_self': return { id: 1, name: a.p_name || '관리자', classes: a.p_classes || 4 };
+    case 'hn_admin_set': case 'hn_admin_del': case 'hn_admin_set_code': return 'ok';
     case 'hn_teacher_data': return { cards: c.filter(x => x.class_no === a.p_class).sort((x, y) => x.student_no - y.student_no || (x.slot || 1) - (y.slot || 1))
         .map(x => ({ ...x, replies: DB.replies.filter(r => r.card_id === x.id && r.lines).map(r => ({ id: r.id, reply_no: r.reply_no, lines: r.lines, best: !!r.best })) })),
       replies_total: DB.replies.filter(r => r.lines && r.class_no === a.p_class).length, scores: [], numbers: DB.numbers[a.p_class] || '' };
@@ -834,10 +840,20 @@ function boardGate(go) {
   setTimeout(() => { const i = document.getElementById('bpw'); if (i) { i.focus(); i.onkeydown = e => { if (e.key === 'Enter') i.closest('.card').querySelector('[data-ok]').click(); }; } }, 30);
 }
 // 반별 QR: 주소에 ?class=3 이 있으면 그 반으로 고정하고 바로 문진표 로그인 화면으로
+// 교사가 여러 명: 교사마다 반 번호 묶음 10개 (1번 교사 1~9, 2번 교사 11~19 ...)
+const dc = c => ((+c - 1) % 10) + 1;            // 화면에 보이는 반 (1~9)
+const range = n => Array.from({ length: n }, (_, i) => i + 1);
+let SUT = 1, SN = 4;                             // 학생 화면: 우리 선생님 번호, 반 수
+try {
+  const t = new URLSearchParams(location.search).get('t');
+  if (t && /^\d{1,2}$/.test(t) && +t >= 1) { SUT = +t; localStorage.setItem('hn_t', t); }
+  else { const v = localStorage.getItem('hn_t'); if (v && /^\d{1,2}$/.test(v)) SUT = +v; }
+} catch (e) {}
+const SB = () => (SUT - 1) * 10;
 let CLS_FIX = 0;
 try {
   const q = new URLSearchParams(location.search).get('class');
-  if (q && /^[1-4]$/.test(q)) CLS_FIX = +q;
+  if (q && /^[1-9]$/.test(q)) CLS_FIX = +q;
 } catch (e) {}
 function clsUnfix() { CLS_FIX = 0; writeLogin(); }
 function home() {
@@ -858,7 +874,7 @@ function home() {
           <button class="ghost ${boardOpen() ? '' : 'shut'}" onclick="boardGate(acSetup)"><span class="em">${boardOpen() ? '🎭' : '🔒'}</span><span>몸으로 말해요 <span class="eni">Act It Out</span><small>친구들의 몸짓을 보고 영어 문장으로 맞혀요<br>Watch and guess the sentence in English</small></span></button>
           <button class="red" onclick="writeLogin()"><span class="em">📋</span><span>보건실 문진표 <span class="eni">Patient Forms</span><small>손님이 되어 문진표를 쓰고, 보건 선생님이 되어 처방해요<br>Write a form, then reply as a nurse</small></span></button>
         </div>
-        <div class="credit">5학년 영어 11. I Have a Headache · 만든 이 Tr. Olivia</div>
+        <div class="credit">만든 이 Tr. Olivia</div>
         <div class="center" style="margin-top:18px"><button class="ghost small teacher-btn" onclick="teacher()">🗂️ 교사 모드 · Teacher</button>
           ${boardOpen() ? `<button class="ghost small teacher-btn" style="margin-left:8px" onclick="boardLock()">🔒 칠판 활동 잠그기 · Lock</button>` : ''}</div>
       </div>
@@ -989,14 +1005,15 @@ function meBye() {
 window.addEventListener('pagehide', meBye);
 async function writeLogin() {
   stopTimer(); meBye();
+  if (!writeLogin.info) { writeLogin.info = true; try { const ti = await rpc('hn_teacher_info', { p_tid: SUT }); if (ti && ti.classes) SN = ti.classes; } catch (e) {} }
   const last = store.get('me') || {};
   $app.innerHTML = `<div class="wrap">
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2></div>
     <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
-      ${CLS_FIX ? `<div class="row" style="justify-content:space-between"><span class="ko" style="font-size:30px">🏫 5학년 <b style="color:var(--red)">${CLS_FIX}</b>반 <span class="eni">Class ${CLS_FIX}</span></span>
+      ${CLS_FIX ? `<div class="row" style="justify-content:space-between"><span class="ko" style="font-size:30px">🏫 <b style="color:var(--red)">${CLS_FIX}</b>반 <span class="eni">Class ${CLS_FIX}</span></span>
           <input type="hidden" id="wCls" value="${CLS_FIX}"></div>
           <p class="muted" style="margin:-6px 0 0">반이 다르면 손을 들어 선생님께 말해요.<span class="en">Wrong class? Raise your hand.</span></p>`
-        : `<label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${[1,2,3,4].map(c => `<option ${last.cls == c ? 'selected' : ''} value="${c}">5학년 ${c}반</option>`).join('')}</select></label>`}
+        : `<label>반 <span class="eni">Class</span> <select id="wCls" onchange="loadNums()">${range(SN).map(c => `<option ${last.cls && dc(last.cls) == c ? 'selected' : ''} value="${c}">${c}반</option>`).join('')}</select></label>`}
       <label>번호 <span class="eni">No.</span> <span id="numBox"><input id="wNo" type="number" min="1" max="99" style="width:120px"></span></label>
       <label>비밀번호 <span class="eni">Password</span> <input id="wPin" type="password" maxlength="12" style="width:200px" onkeydown="if(event.key==='Enter')writeEnter()" autocomplete="off"></label>
       <p class="muted" style="margin:0">처음이면 비밀번호를 비워 두고 들어가기를 눌러요. 내 비밀번호를 정할 수 있어요.<span class="en">First time? Leave it empty and press Enter to make your password.</span></p>
@@ -1005,7 +1022,7 @@ async function writeLogin() {
   loadNums(last.no);
 }
 async function loadNums(sel) {
-  const cls = +document.getElementById('wCls').value;
+  const cls = SB() + +document.getElementById('wCls').value;
   try {
     const nums = parseNumbers(await rpc('hn_get_numbers', { p_class: cls }));
     if (nums.length) document.getElementById('numBox').innerHTML = `<select id="wNo"><option value="">번호 선택 (No.)</option>${nums.map(n => `<option ${sel == n ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
@@ -1013,14 +1030,14 @@ async function loadNums(sel) {
   } catch (e) {}
 }
 async function writeEnter() {
-  const cls = +document.getElementById('wCls').value, no = +document.getElementById('wNo').value;
+  const cls = SB() + +document.getElementById('wCls').value, no = +document.getElementById('wNo').value;
   const pin = document.getElementById('wPin').value.trim();
   if (!no) { toast('번호를 골라 주세요\nChoose your number.'); return; }
   let r = null;
   try { r = await rpc('hn_student_login', { p_class: cls, p_no: no, p_pin: pin, p_dev: DEV }); } catch (e) { return serverError(e); }
   if (r === 'new') return pinSetup(cls, no);
   if (r === 'busy') {
-    uiModal(`<div style="font-size:70px">🙋</div><p class="ko" style="font-size:26px;margin:0">${cls}반 ${no}번은 지금 다른 기기에서 쓰고 있어요</p>
+    uiModal(`<div style="font-size:70px">🙋</div><p class="ko" style="font-size:26px;margin:0">${dc(cls)}반 ${no}번은 지금 다른 기기에서 쓰고 있어요</p>
       <p class="eni">This number is being used on another device.</p><p>내 반과 번호가 맞는지 다시 확인해요. 맞는데도 이 화면이 나오면 선생님께 말해요.</p>`, () => {}, '확인<span class="en">OK</span>');
     const x = document.querySelector('.banner:last-child [data-x]'); if (x) x.remove();
     return;
@@ -1035,7 +1052,7 @@ function pinSetup(cls, no) {
     <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
       <div class="center" style="background:#fff1f2;border:3px solid var(--red);border-radius:16px;padding:12px">
         <div class="ko" style="font-size:22px">처음 왔네요! 👋 내 반과 번호가 맞나요?</div>
-        <div class="ko" style="font-size:44px;color:var(--red)">5학년 ${cls}반 ${no}번</div>
+        <div class="ko" style="font-size:44px;color:var(--red)">${dc(cls)}반 ${no}번</div>
         <div class="eni">Is this your class and number? If not, go back.</div></div>
       <p style="margin:0">다음부터 이 비밀번호로 들어와요. 친구에게 알려 주지 마세요! (4~12자)<span class="en">Use it next time. Keep it secret! (4-12 characters)</span></p>
       <label>비밀번호 <span class="eni">Password</span> <input id="np1" type="password" maxlength="12" style="width:220px" autocomplete="off"></label>
@@ -1131,7 +1148,7 @@ async function writeHub(room) {
       </div>`;
   }
   $app.innerHTML = `<div class="wrap">
-    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2><span class="muted">${ME.cls}반 ${ME.no}번 · Class ${ME.cls} No. ${ME.no}</span></div>
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>📋 보건실 문진표<span class="en">Patient Forms</span></h2><span class="muted">${dc(ME.cls)}반 ${ME.no}번 · Class ${dc(ME.cls)} No. ${ME.no}</span></div>
     ${tabs}${body}</div>`;
 }
 
@@ -1569,6 +1586,8 @@ async function nrSend() {
 /* =========================================================
    TEACHER
    ========================================================= */
+let TID = null, TN = 4, TNAME = '';
+const TB = () => ((TID || 1) - 1) * 10;
 let TPW = null, TCLS = 1, TD = null, TTAB = 'students', GROUP_BASE = 4, GROUPS = null;
 try { TPW = sessionStorage.getItem('hn_tpw'); } catch (e) {}
 async function teacher() {
@@ -1580,23 +1599,70 @@ async function teacher() {
     <div class="panel" style="max-width:480px;margin:40px auto;display:grid;gap:12px">
       <p style="margin:0">${has ? '교사 비밀번호를 입력하세요.<span class="en">Enter the teacher password.</span>' : '처음 사용하시네요. 교사 비밀번호를 정해 주세요 (4자 이상).<span class="en">First time? Set a password (4+ characters).</span>'}</p>
       <input id="tpw" type="password" onkeydown="if(event.key==='Enter')tLogin(${!has})">
-      <button onclick="tLogin(${!has})">${has ? '들어가기<span class="en">Enter</span>' : '비밀번호 정하기<span class="en">Set password</span>'}</button></div></div>`;
+      <button onclick="tLogin(${!has})">${has ? '들어가기<span class="en">Enter</span>' : '비밀번호 정하기<span class="en">Set password</span>'}</button></div>
+    ${has ? `<div class="panel center" style="max-width:480px;margin:0 auto"><p style="margin:0 0 8px">처음 오신 선생님이세요? <span class="eni">New teacher?</span></p>
+      <button class="ghost" onclick="tSignup()">✨ 새 선생님 등록하기<span class="en">Create my teacher account</span></button></div>` : ''}</div>`;
   document.getElementById('tpw').focus();
+}
+function tSignup() {
+  $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="teacher()">← 돌아가기 <span class="eni">Back</span></button><h2>✨ 새 선생님 등록<span class="en">New teacher</span></h2></div>
+    <div class="panel" style="max-width:560px;margin:30px auto;display:grid;gap:14px">
+      <p style="margin:0">내 반과 학생 기록이 따로 관리돼요. 다른 선생님은 내 반을 볼 수 없어요.<span class="en">Your classes and student records are kept separately.</span></p>
+      <label>교사 코드 <span class="eni">Teacher code</span> <input id="suCode" type="password" style="width:220px" autocomplete="off"></label>
+      <p class="muted" style="margin:-8px 0 0">앱을 알려 준 선생님께 받은 코드예요.<span class="en">Ask the teacher who shared this app.</span></p>
+      <label>이름 <span class="eni">Name</span> <input id="suName" maxlength="20" placeholder="예: 김○○" style="width:220px"></label>
+      <label>맡은 반 수 <span class="eni">Classes</span> <select id="suCls">${range(9).map(c => `<option ${c === 4 ? 'selected' : ''} value="${c}">${c}개 반 (1~${c}반)</option>`).join('')}</select></label>
+      <label>교사 비밀번호 <span class="eni">Password (4+)</span> <input id="suPw" type="password" style="width:220px"></label>
+      <label>한 번 더 <span class="eni">Again</span> <input id="suPw2" type="password" style="width:220px" onkeydown="if(event.key==='Enter')tSignupGo()"></label>
+      <p class="muted" style="margin:0">비밀번호로 선생님을 구분해요. 다른 선생님과 겹치지 않게 나만의 비밀번호로 정해 주세요.</p>
+      <button class="red" onclick="tSignupGo()">등록하고 시작하기<span class="en">Create and start</span></button></div></div>`;
+  document.getElementById('suCode').focus();
+}
+async function tSignupGo() {
+  const name = document.getElementById('suName').value.trim(), cl = +document.getElementById('suCls').value;
+  const pw = document.getElementById('suPw').value, pw2 = document.getElementById('suPw2').value;
+  if (!name) return toast('이름을 써 주세요\nEnter your name.');
+  if (pw.length < 4) return toast('비밀번호는 4자 이상이에요\nUse 4+ characters.');
+  if (pw !== pw2) return toast('두 비밀번호가 달라요\nPasswords do not match.');
+  const code = document.getElementById('suCode').value.trim();
+  if (!code) return toast('교사 코드를 써 주세요\nEnter the teacher code.');
+  let r; try { r = await rpc('hn_teacher_signup', { p_name: name, p_pw: pw, p_classes: cl, p_code: code }); } catch (e) { return serverError(e); }
+  if (r === 'code') return toast('교사 코드가 맞지 않아요\nWrong teacher code.', 2600);
+  if (r === 'dup') return toast('이미 쓰이는 비밀번호예요. 다른 비밀번호로 정해 주세요\nPassword already used.', 3000);
+  if (r === 'full') return toast('더 이상 등록할 수 없어요. 만든 선생님께 문의해 주세요\nNo more accounts.', 3000);
+  if (!/^\d+$/.test(String(r))) return toast('등록하지 못했어요\nCould not create.');
+  TPW = pw; tSetInfo({ id: +r, name, classes: cl });
+  try { sessionStorage.setItem('hn_tpw', pw); localStorage.setItem('hn_board', '1'); localStorage.setItem('hn_t', String(r)); } catch (e) {}
+  SUT = +r; TTAB = 'qr'; TCLS = 1;
+  await teacherMain();
+  uiModal(`<div style="font-size:60px">🎉</div><h2>${esc(name)} 선생님, 환영해요!</h2>
+    <div style="text-align:left;font-size:18px;line-height:1.7">
+      ① 학생들은 이 화면의 <b>📱 반별 QR</b>로 들어오게 해 주세요. 반이 자동으로 정해져요.<br>
+      ② 학생 번호가 정해져 있다면 <b>설정</b> 탭에서 번호를 넣어 두면 편해요.<br>
+      ③ 다음부터는 <b>교사 모드</b>에서 방금 정한 비밀번호로 들어오면 돼요.</div>`, () => {}, '시작하기<span class="en">Start</span>');
+  const x = document.querySelector('.banner:last-child [data-x]'); if (x) x.remove();
 }
 async function tLogin(setup) {
   const pw = document.getElementById('tpw').value;
   try {
-    const ok = setup ? await rpc('hn_setup_pw', { p_new: pw }) : await rpc('hn_teacher_login', { p_pw: pw });
+    let ok = setup ? await rpc('hn_setup_pw', { p_new: pw }) : await rpc('hn_teacher_login', { p_pw: pw });
+    if (ok && setup) ok = await rpc('hn_teacher_login', { p_pw: pw });
+    if (ok) { tSetInfo(ok); try { localStorage.setItem('hn_t', String(TID)); } catch (e) {} SUT = TID; }
     if (!ok) return toast(setup ? '4자 이상으로 정해 주세요\nUse 4+ characters.' : '비밀번호가 맞지 않아요\nWrong password.');
     TPW = pw; try { sessionStorage.setItem('hn_tpw', pw); localStorage.setItem('hn_board', '1'); } catch (e) {}
     teacherMain();
   } catch (e) { serverError(e); }
 }
+function tSetInfo(r) {
+  TID = (r && r.id) || 1; TN = (r && r.classes) || 4; TNAME = (r && r.name) || '';
+  if (TCLS > TN) TCLS = 1;
+}
 async function teacherMain() {
-  try { TD = await rpc('hn_teacher_data', { p_pw: TPW, p_class: TCLS }); } catch (e) { return serverError(e); }
+  if (TPW && !TID) { try { const r = await rpc('hn_teacher_login', { p_pw: TPW }); if (r) tSetInfo(r); else { TPW = null; try { sessionStorage.removeItem('hn_tpw'); } catch (e) {} return teacher(); } } catch (e) { return serverError(e); } }
+  try { TD = await rpc('hn_teacher_data', { p_pw: TPW, p_class: TB() + TCLS }); } catch (e) { return serverError(e); }
   if (!TD) { TPW = null; try { sessionStorage.removeItem('hn_tpw'); } catch (e) {} return teacher(); }
-  if (TTAB === 'report') { try { TREP = await rpc('hn_teacher_report', { p_pw: TPW, p_class: TCLS }) || []; } catch (e) { TREP = []; } }
-  if (TTAB === 'students') { try { TSTU = await rpc('hn_teacher_students', { p_pw: TPW, p_class: TCLS }) || []; } catch (e) { TSTU = []; } }
+  if (TTAB === 'report') { try { TREP = await rpc('hn_teacher_report', { p_pw: TPW, p_class: TB() + TCLS }) || []; } catch (e) { TREP = []; } }
+  if (TTAB === 'students') { try { TSTU = await rpc('hn_teacher_students', { p_pw: TPW, p_class: TB() + TCLS }) || []; } catch (e) { TSTU = []; } }
   const cards = TD.cards || [], scores = TD.scores || [];
   cards.forEach(c => { c.replies = c.replies || []; });
   const replied = TD.replies_total != null ? TD.replies_total : cards.reduce((n, c) => n + c.replies.length, 0);
@@ -1620,7 +1686,7 @@ async function teacherMain() {
   } else if (TTAB === 'goal') {
     body = `<p style="font-size:20px">우리 반 친구들이 쓴 처방(답장) 수를 큰 게이지로 보여 줘요. 목표를 정하고 전자칠판에 띄워 주세요.<span class="en">Show how many replies your class wrote on the board.</span></p>
       <p class="ko" style="font-size:24px">지금 ${TCLS}반 처방 <b style="color:var(--red)">${replied}</b>개</p>
-      <button class="sun" onclick="goalScreen(${TCLS})">🎯 전자칠판에 띄우기<span class="en">Show on the board</span></button>`;
+      <button class="sun" onclick="goalScreen(${TB() + TCLS})">🎯 전자칠판에 띄우기<span class="en">Show on the board</span></button>`;
   } else if (TTAB === 'scores') {
     body = `<table><tr><th>짝</th><th>점수</th><th>치료</th><th>시간</th></tr>
       ${scores.map(s => `<tr><td>${esc(s.names)}</td><td>${s.score}</td><td>${s.cured}/${s.total}</td><td>${new Date(s.created_at).toLocaleString('ko-KR')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">기록 없음</td></tr>'}</table>
@@ -1630,20 +1696,34 @@ async function teacherMain() {
   } else if (TTAB === 'qr') {
     body = `<p class="ko" style="margin:0 0 6px">학생이 크롬북 카메라로 찍으면 <b>그 반이 정해진 채로</b> 문진표 로그인 화면이 열려요. 학생은 번호와 비밀번호만 넣으면 돼요.</p>
       <p class="muted" style="margin:0 0 12px">반을 잘못 찍었으면 로그인 화면의 <b>반 바꾸기</b>를 누르면 돼요.</p>
-      <div class="qrgrid">${[1, 2, 3, 4].map(c => `<div class="qrcell"><div class="ko" style="font-size:28px">5학년 ${c}반</div><div id="qr${c}"></div>
+      <div class="qrgrid">${range(TN).map(c => `<div class="qrcell"><div class="ko" style="font-size:28px">${c}반</div><div id="qr${c}"></div>
         <button class="small" onclick="qrBig(${c})">🔍 크게 보기 · Big</button></div>`).join('')}</div>`;
-    setTimeout(async () => { try { await loadQR(); [1, 2, 3, 4].forEach(c => { const b = document.getElementById('qr' + c); if (b) drawQR(b, classURL(c), 200); }); } catch (e) {} }, 0);
+    setTimeout(async () => { try { await loadQR(); range(TN).forEach(c => { const b = document.getElementById('qr' + c); if (b) drawQR(b, classURL(c), 200); }); } catch (e) {} }, 0);
   } else if (TTAB === 'set') {
     body = `<p>학생 번호 (범위는 - , 여러 개는 쉼표). 예: <b>1-15, 51-60</b><span class="en">Student numbers (use - for ranges, commas between). e.g. 1-15, 51-60</span></p>
       <div class="row"><input id="nums" style="flex:1" value="${esc(TD.numbers || '')}"><button onclick="tSaveNums()">저장<span class="en">Save</span></button></div>
       <p class="muted">비워 두면 학생이 번호를 직접 입력해요.<span class="en">Leave empty to let students type their number.</span></p>
+      <h3 class="ko">내 정보 <span class="eni">My account</span></h3>
+      <div class="row" style="gap:8px"><label>이름 <input id="myName" value="${esc(TNAME)}" maxlength="20" style="width:180px"></label>
+        <label>맡은 반 수 <select id="myCls">${range(9).map(c => `<option ${c === TN ? 'selected' : ''} value="${c}">${c}개 반</option>`).join('')}</select></label>
+        <button class="ghost" onclick="tSelfSave()">저장<span class="en">Save</span></button></div>
+      <p class="muted" style="margin:6px 0 0">학생 주소: <code>${esc(classURL(1).replace(/\?class=1&?/, '?').replace(/\?$/, ''))}</code> · 반별 QR을 쓰면 반이 자동으로 정해져요.</p>
       <h3 class="ko">교사 비밀번호 바꾸기 <span class="eni">Change teacher password</span></h3>
       <div class="row"><input id="npw" type="password" placeholder="새 비밀번호 · New password"><button class="ghost" onclick="tChangePw()">바꾸기<span class="en">Change</span></button>
-      <button class="ghost" onclick="TPW=null;try{sessionStorage.removeItem('hn_tpw')}catch(e){};home()">로그아웃<span class="en">Log out</span></button></div>`;
+      <button class="ghost" onclick="TPW=null;TID=null;try{sessionStorage.removeItem('hn_tpw')}catch(e){};home()">로그아웃<span class="en">Log out</span></button></div>
+      ${TID === 1 ? `<h3 class="ko" style="margin-top:24px">👥 교사 계정 관리 <span class="eni">Teacher accounts</span></h3>
+        <p class="muted" style="margin:0 0 8px">함께 쓸 선생님 계정을 만들어요. 선생님마다 반과 학생 기록이 따로 관리돼요. 비밀번호는 선생님마다 달라야 해요.</p>
+        <div class="row" style="gap:8px;margin-bottom:10px"><b>🔐 교사 코드</b><span class="muted">새 선생님이 등록할 때 넣는 코드예요.</span>
+          <input id="admCode" placeholder="새 교사 코드 (4자 이상)" style="width:200px" autocomplete="off"><button class="ghost small" onclick="admCode()">바꾸기</button></div>
+        <div id="admBox">불러오는 중…</div>
+        <div class="row" style="margin-top:10px;gap:8px"><input id="anName" placeholder="이름 (예: 김○○)" style="width:170px"><input id="anPw" placeholder="첫 비밀번호 (4자 이상)" style="width:200px">
+          <label>반 수 <select id="anCls">${range(9).map(c => `<option ${c === 4 ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+          <button onclick="admAdd()">➕ 계정 만들기<span class="en">Add</span></button></div>` : ''}`;
+    if (TID === 1) setTimeout(admLoad, 0);
   }
   $app.innerHTML = `<div class="wrap">
-    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🗂️ 교사 모드<span class="en">Teacher</span></h2>
-      <div class="tabs">${[1,2,3,4].map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
+    <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🗂️ 교사 모드${TNAME && TID > 1 ? ` · ${esc(TNAME)}` : ''}<span class="en">Teacher</span></h2>
+      <div class="tabs">${range(TN).map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
     <div class="panel">
       <div class="row" style="margin-bottom:12px;justify-content:space-between">
         <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['qr', '📱 반별 QR<span class="en">Class QR</span>'], ['set', '설정<span class="en">Settings</span>']]
@@ -1653,7 +1733,7 @@ async function teacherMain() {
 }
 let TSTU = null, TREP = [], TCOM = {};
 /* ---- 반별 QR ---- */
-const classURL = c => location.href.split('#')[0].split('?')[0] + '?class=' + c;
+const classURL = c => location.href.split('#')[0].split('?')[0] + '?class=' + c + ((TID || 1) > 1 ? '&t=' + TID : '');
 function loadQR() {
   if (window.QRCodeLib) return Promise.resolve();
   return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'qr.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
@@ -1668,7 +1748,7 @@ function drawQR(box, text, size) {
 }
 async function qrBig(c) {
   const d = document.createElement('div'); d.className = 'banner'; d.onclick = e => { if (e.target === d) d.remove(); };
-  d.innerHTML = `<div class="card center" style="max-width:720px"><p class="ko" style="font-size:40px;margin:0">📱 5학년 <b style="color:var(--red)">${c}반</b> 문진표</p>
+  d.innerHTML = `<div class="card center" style="max-width:720px"><p class="ko" style="font-size:40px;margin:0">📱 <b style="color:var(--red)">${c}반</b> 문진표</p>
     <p class="eni" style="font-size:22px;margin:4px 0 10px">Class ${c} · Scan to enter</p><div id="qrB" style="display:inline-block"></div>
     <div><button class="ghost" style="margin-top:12px" onclick="this.closest('.banner').remove()">닫기<span class="en">Close</span></button></div></div>`;
   document.body.appendChild(d);
@@ -1748,12 +1828,12 @@ function loadXLSX() {
 async function reportExcel() {
   try { await loadXLSX(); } catch (e) { return toast('엑셀 도구를 불러오지 못했어요\nCould not load the Excel tool.'); }
   const rows = [['반', '번호', '손님 이름', '문진표', '쓴 처방 수', '받은 💖', '성적표 문구']];
-  TREP.forEach(x => rows.push([`5-${TCLS}`, x.no, x.card ? x.card.guest_name || '' : '', [x.card, x.card2].filter(Boolean).map(k => (k.lines || []).join(' ')).join(' / '),
+  TREP.forEach(x => rows.push([`${TCLS}반`, x.no, x.card ? x.card.guest_name || '' : '', [x.card, x.card2].filter(Boolean).map(k => (k.lines || []).join(' ')).join(' / '),
     (x.written || []).length, (x.written || []).filter(r => r.best).length, TCOM[TCLS + '-' + x.no] || '']));
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 12 }, { wch: 50 }, { wch: 10 }, { wch: 8 }, { wch: 90 }];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, `${TCLS}반`);
-  XLSX.writeFile(wb, `보건실_성적표문구_5-${TCLS}.xlsx`);
+  XLSX.writeFile(wb, `보건실_성적표문구_${TCLS}반.xlsx`);
 }
 function studentsTab() {
   const list = TSTU || [], nums = parseNumbers(TD.numbers || '');
@@ -1782,33 +1862,83 @@ function tStuPin(n) {
 }
 function tMove(n) {
   uiModal(`<h2>🔀 ${TCLS}반 ${n}번 기록 옮기기</h2><p class="eni">Move this student's password, forms and replies</p>
-    <p>옮길 곳 <select id="mvC" style="font-size:22px">${[1, 2, 3, 4].map(c => `<option value="${c}" ${c === TCLS ? '' : ''}>${c}반</option>`).join('')}</select>
+    <p>옮길 곳 <select id="mvC" style="font-size:22px">${range(TN).map(c => `<option value="${c}" ${c === TCLS ? '' : ''}>${c}반</option>`).join('')}</select>
       <input id="mvN" type="number" min="1" max="99" value="${n}" style="width:100px;font-size:22px"> 번</p>
     <p class="muted">비밀번호도 그대로 옮겨져서, 학생은 원래 비밀번호로 새 반에 들어가면 돼요.</p>`, async () => {
     const c = +document.getElementById('mvC').value, no = +document.getElementById('mvN').value;
     if (!no || (c === TCLS && no === n)) return toast('옮길 반과 번호를 확인해 주세요\nCheck the class and number.');
     try {
-      const r = await rpc('hn_teacher_move', { p_pw: TPW, p_class: TCLS, p_no: n, p_to_class: c, p_to_no: no });
+      const r = await rpc('hn_teacher_move', { p_pw: TPW, p_class: TB() + TCLS, p_no: n, p_to_class: TB() + c, p_to_no: no });
       toast(r === 'ok' ? `${c}반 ${no}번으로 옮겼어요\nMoved.` : r === 'exists' ? `${c}반 ${no}번에 이미 기록이 있어요. 그 기록을 먼저 지워 주세요\nThat number already has data.` : '다시 해 주세요\nPlease try again.', 3200);
     } catch (e) { return serverError(e); }
     GROUPS = null; teacherMain();
   }, '옮기기<span class="en">Move</span>');
-  setTimeout(() => { const sel = document.getElementById('mvC'); if (sel) sel.value = String(TCLS === 1 ? 2 : 1); }, 0);
+  setTimeout(() => { const sel = document.getElementById('mvC'); if (sel) sel.value = String(TCLS); }, 0);
 }
 async function tStu(n, action, pin) {
   if (action === 'setpin' && (!pin || pin.length < 4)) { toast('4자 이상으로 써 주세요\nUse 4+ characters.'); return; }
   try {
-    const r = await rpc('hn_teacher_student', { p_pw: TPW, p_class: TCLS, p_no: n, p_action: action, p_pin: pin || null });
+    const r = await rpc('hn_teacher_student', { p_pw: TPW, p_class: TB() + TCLS, p_no: n, p_action: action, p_pin: pin || null });
     toast(r === 'ok' ? ({ setpin: `${n}번 비밀번호를 바꿨어요\nPassword set.`, reset: `${n}번 비밀번호를 초기화했어요\nPassword reset.`, delete: `${n}번 기록을 지웠어요\nDeleted.`, kick: `${n}번 접속을 풀었어요\nFreed.` })[action] : '다시 해 주세요\nPlease try again.');
   } catch (e) { return serverError(e); }
   GROUPS = null; teacherMain();
 }
 async function tDelReply(id) { try { await rpc('hn_teacher_del_reply', { p_pw: TPW, p_reply: id }); GROUPS = null; teacherMain(); } catch (e) { serverError(e); } }
 async function tAct(id, a) { try { await rpc('hn_teacher_action', { p_pw: TPW, p_card: id, p_action: a }); GROUPS = null; teacherMain(); } catch (e) { serverError(e); } }
-async function tClearScores() { try { await rpc('hn_clear_scores', { p_pw: TPW, p_class: TCLS }); teacherMain(); } catch (e) { serverError(e); } }
+/* ---- 교사 계정 관리 (관리자만) ---- */
+const appRoot = () => location.href.split('#')[0].split('?')[0];
+async function admLoad() {
+  const box = document.getElementById('admBox'); if (!box) return;
+  let L = [];
+  try { L = await rpc('hn_admin_list', { p_pw: TPW }) || []; } catch (e) { box.textContent = '불러오지 못했어요'; return; }
+  box.innerHTML = `<table class="ttable"><tr><th>#</th><th>이름</th><th>반 수</th><th>학생·문진표</th><th>들어가는 주소</th><th></th></tr>
+    ${L.map(t => `<tr><td>${t.id}</td><td>${esc(t.name)}${t.id === 1 ? ' <span class="pill">관리자</span>' : ''}</td><td>${t.classes}반</td><td>${t.students}명 · ${t.cards}장</td>
+      <td style="font-size:14px">학생: <code>${esc(appRoot())}${t.id > 1 ? '?t=' + t.id : ''}</code><br>교사 모드는 같은 주소에서 자기 비밀번호로</td>
+      <td>${t.id > 1 ? `<button class="small ghost" onclick="admEdit(${t.id}, ${esc(JSON.stringify(t.name))}, ${t.classes})">✏️ 고치기</button>
+        <button class="small red" onclick="uiConfirm('${esc(t.name)} 선생님 계정과 학생 기록을 모두 지울까요? 되돌릴 수 없어요.', () => admDel(${t.id}))">🗑️</button>` : ''}</td></tr>`).join('')}</table>`;
+}
+async function admAdd() {
+  const name = document.getElementById('anName').value.trim(), pw = document.getElementById('anPw').value, cl = +document.getElementById('anCls').value;
+  if (!name || pw.length < 4) return toast('이름과 4자 이상 비밀번호를 써 주세요\nName and 4+ character password.');
+  let r; try { r = await rpc('hn_admin_add', { p_pw: TPW, p_name: name, p_newpw: pw, p_classes: cl }); } catch (e) { return serverError(e); }
+  if (r === 'dup') return toast('다른 선생님이 쓰는 비밀번호예요. 다른 걸로 정해 주세요\nPassword already used.', 3000);
+  if (!/^\d+$/.test(String(r))) return toast('만들지 못했어요\nCould not add.');
+  uiModal(`<h2>✅ ${esc(name)} 선생님 계정을 만들었어요</h2>
+    <p>아래 내용을 그 선생님께 전해 주세요.</p>
+    <div style="text-align:left;background:#f1faf8;border-radius:12px;padding:12px;font-size:18px;line-height:1.7">
+      주소: <b>${esc(appRoot())}?t=${r}</b><br>교사 모드 비밀번호: <b>${esc(pw)}</b><br>
+      처음 한 번 이 주소로 들어오면, 그 기기에서는 다음부터 그냥 주소로 열어도 돼요.<br>학생 입장은 교사 모드 → 📱 반별 QR을 쓰면 돼요.</div>`, () => admLoad(), '확인');
+  const x = document.querySelector('.banner:last-child [data-x]'); if (x) x.remove();
+  document.getElementById('anName').value = ''; document.getElementById('anPw').value = '';
+}
+function admEdit(id, name, cl) {
+  uiModal(`<h2>✏️ ${esc(name)} 선생님 계정</h2>
+    <p>이름 <input id="aeName" value="${esc(name)}" style="width:200px"></p>
+    <p>반 수 <select id="aeCls">${range(9).map(c => `<option ${c === cl ? 'selected' : ''}>${c}</option>`).join('')}</select></p>
+    <p>새 비밀번호 <input id="aePw" placeholder="바꿀 때만 (4자 이상)" style="width:220px"></p>`, async () => {
+    let r; try { r = await rpc('hn_admin_set', { p_pw: TPW, p_tid: id, p_name: document.getElementById('aeName').value, p_newpw: document.getElementById('aePw').value, p_classes: +document.getElementById('aeCls').value }); } catch (e) { return serverError(e); }
+    toast(r === 'ok' ? '저장했어요\nSaved.' : r === 'dup' ? '다른 선생님이 쓰는 비밀번호예요\nPassword already used.' : '저장하지 못했어요\nCould not save.', 2600);
+    admLoad();
+  }, '저장<span class="en">Save</span>');
+}
+async function admCode() {
+  const v = document.getElementById('admCode').value.trim();
+  if (v.length < 4) return toast('4자 이상으로 정해 주세요\nUse 4+ characters.');
+  try { const r = await rpc('hn_admin_set_code', { p_pw: TPW, p_code: v }); toast(r === 'ok' ? `교사 코드를 바꿨어요: ${v}\nCode changed.` : '바꾸지 못했어요\nCould not change.', 3000); } catch (e) { serverError(e); }
+  document.getElementById('admCode').value = '';
+}
+async function admDel(id) {
+  try { const r = await rpc('hn_admin_del', { p_pw: TPW, p_tid: id }); toast(r === 'ok' ? '지웠어요\nDeleted.' : '지우지 못했어요\nCould not delete.'); } catch (e) { return serverError(e); }
+  admLoad();
+}
+async function tSelfSave() {
+  let r; try { r = await rpc('hn_teacher_self', { p_pw: TPW, p_name: document.getElementById('myName').value, p_classes: +document.getElementById('myCls').value }); } catch (e) { return serverError(e); }
+  if (r) { tSetInfo(r); toast('저장했어요\nSaved.'); teacherMain(); } else toast('저장하지 못했어요\nCould not save.');
+}
+async function tClearScores() { try { await rpc('hn_clear_scores', { p_pw: TPW, p_class: TB() + TCLS }); teacherMain(); } catch (e) { serverError(e); } }
 async function tSaveNums() {
   const v = document.getElementById('nums').value.trim();
-  try { await rpc('hn_set_numbers', { p_pw: TPW, p_class: TCLS, p_numbers: v }); toast(`저장했어요 (${parseNumbers(v).length}명)\nSaved (${parseNumbers(v).length} students)`); teacherMain(); } catch (e) { serverError(e); }
+  try { await rpc('hn_set_numbers', { p_pw: TPW, p_class: TB() + TCLS, p_numbers: v }); toast(`저장했어요 (${parseNumbers(v).length}명)\nSaved (${parseNumbers(v).length} students)`); teacherMain(); } catch (e) { serverError(e); }
 }
 async function tChangePw() {
   const n = document.getElementById('npw').value;
@@ -1832,7 +1962,7 @@ function goalDraw(n) {
   const pct = Math.min(100, Math.round(n / GOAL.n * 100)), hit = n >= GOAL.n;
   if (hit && !GOAL.done) { GOAL.done = true; sfx('end'); }
   $app.innerHTML = `<div class="wrap bigscreen">
-    <div class="top"><button class="ghost small" onclick="stopTimer();teacherMain()">← 교사 모드 <span class="eni">Teacher</span></button><h2>🎯 ${GOAL.cls}반 처방 목표<span class="en">Class ${GOAL.cls} goal</span></h2>
+    <div class="top"><button class="ghost small" onclick="stopTimer();teacherMain()">← 교사 모드 <span class="eni">Teacher</span></button><h2>🎯 ${dc(GOAL.cls)}반 처방 목표<span class="en">Class ${dc(GOAL.cls)} goal</span></h2>
       <div class="row">${[20, 30, 50, 80, 100].map(g => `<button class="small ${GOAL.n === g ? '' : 'ghost'}" onclick="GOAL.n=${g};GOAL.done=false;try{localStorage.setItem('hn_goal',${g})}catch(e){};goalDraw(GOAL.last<0?0:GOAL.last)">${g}개</button>`).join('')}
         <button class="small ghost" onclick="goalPoll()">🔄</button></div></div>
     <div class="goal">
@@ -1908,7 +2038,7 @@ function scriptHTML(g, i) {
   const roleBox = (label, key) => `<div><b>${label}</b><span contenteditable="true">${esc(g.roles[key])}</span></div>`;
   return `<div class="scr">
     <h2>${esc(name)}'s Sick Day</h2>
-    <div class="meta">5학년 ${TCLS}반 · ${i + 1}모둠 (${g.size}인) · 문진표 ${c.student_no}번${g.reply ? ` · 답장 ${g.reply.reply_no}번` : ''} · 준비물: 휴지, 약 봉투(${esc(meds)}), 체온계</div>
+    <div class="meta">${TCLS}반 · ${i + 1}모둠 (${g.size}인) · 문진표 ${c.student_no}번${g.reply ? ` · 답장 ${g.reply.reply_no}번` : ''} · 준비물: 휴지, 약 봉투(${esc(meds)}), 체온계</div>
     <div class="roles">${roleBox('Patient (' + esc(name) + ')', 'patient')}${roleBox('Friend (친구)', 'friend')}${roleBox('Nurse (보건 선생님)', 'nurse')}${G4 ? roleBox('Teacher (담임 선생님)', 'teacher') : ''}${g.size >= 5 ? roleBox('Friend 2 (친구 2)', 'friend2') : ''}</div>
     <div class="scene">Scene 1. Classroom · 교실</div>
     ${G4 ? L('Teacher', 'Good morning, everyone!') : ''}
