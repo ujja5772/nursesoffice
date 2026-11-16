@@ -469,6 +469,39 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 .scr-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px;color:#a05a5a}.scr-tools s{color:#999}
 .ln [contenteditable]:focus{outline:2px dashed var(--sun);background:#fffbe8}
 @media print{.noprint{display:none!important}}
+.csheet{display:grid;grid-template-columns:minmax(0,42fr) minmax(0,58fr);gap:12px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.csheet .ch{font-family:Jua;font-size:22px;color:var(--teal);border-bottom:2px solid var(--line);margin-bottom:8px}
+.csheet .ch span{font-size:15px;color:#5d807b;margin-left:6px}
+.cpat{display:flex;align-items:center;gap:10px}.cname{font-family:Nunito;font-weight:900;font-size:26px}
+.clines p{font-family:Nunito;font-weight:800;font-size:18px;margin:4px 0;line-height:1.4}
+.cguide{margin-top:10px;font-size:12.5px;color:#5d807b;border-top:1.5px dashed var(--line);padding-top:6px}
+.cbox{border:1.5px solid #cfe4df;border-radius:10px;padding:6px 10px;margin-bottom:6px}
+.cb-top{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}.cb-top b{font-family:Jua;color:var(--red);font-size:16px}
+.cb-top i,.cb-adv i,.cb-adv2 i{display:inline-block;border-bottom:1.5px solid #9ab;min-width:140px;height:18px}
+.cb-meds{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;margin:4px 0}.cb-meds img{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin:0 2px}
+.cb-adv{font-size:14px;display:flex;gap:6px;align-items:end}.cb-adv i{flex:1}.cb-adv2{display:flex;margin-top:6px}.cb-adv2 i{flex:1}
+@media print{
+  .csheet{border:0;border-radius:0;margin:0;padding:0;height:190mm;page-break-after:always;break-after:page;gap:8mm;overflow:hidden}
+  .cright{display:flex;flex-direction:column;height:190mm}
+  .cright .cbox{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .csheet .ch{font-size:26px}
+  .clines p{font-size:24px;margin:7px 0}
+  .cname{font-size:32px}
+  .cpat .pic{width:150px!important;height:150px!important}
+  .cguide{font-size:14px}
+  .cb-top{font-size:16px}.cb-top b{font-size:19px}
+  .cb-meds{font-size:15px;gap:4px 14px}.cb-meds img{width:26px;height:26px}
+  .cb-adv{font-size:16px}
+  .csheet:last-child{page-break-after:auto;break-after:auto}
+  .cbox{padding:3mm 4mm;margin-bottom:3mm;box-sizing:border-box}
+  .cbox:last-child{margin-bottom:0}
+  .cb-adv2{margin-top:2mm}
+}
+.pt-how{font-size:22px;line-height:1.7;margin:0 auto;max-width:860px}.pt-how .eni{font-size:16px}
+.pt-title{font-size:46px;margin-top:10px}.pt-time{font-family:Nunito;font-weight:900;font-size:150px;line-height:1.1;color:var(--teal)}
+.pt-time.hurry{color:var(--red);animation:pulse 1s infinite}.pt-move .pt-time{color:#c48a00}.pt-end .pt-time{color:#b0466a}
+.pt-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.pt-dots i{width:16px;height:16px;border-radius:50%;background:#dfe9e7}.pt-dots i.done{background:var(--teal)}.pt-dots i.now{background:var(--red);transform:scale(1.3)}
+@keyframes pulse{50%{opacity:.5}}
 </style>
 </head>
 <body>
@@ -1734,6 +1767,8 @@ async function teacherMain() {
     body = `<table><tr><th>짝</th><th>점수</th><th>치료</th><th>시간</th></tr>
       ${scores.map(s => `<tr><td>${esc(s.names)}</td><td>${s.score}</td><td>${s.cured}/${s.total}</td><td>${new Date(s.created_at).toLocaleString('ko-KR')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">기록 없음</td></tr>'}</table>
       <button class="small red" style="margin-top:10px" onclick="uiConfirm('${TCLS}반 게임 기록을 모두 지울까요?',tClearScores)">${TCLS}반 기록 지우기</button>`;
+  } else if (TTAB === 'clinic') {
+    body = clinicTab(cards);
   } else if (TTAB === 'script') {
     body = scriptTab(cards);
   } else if (TTAB === 'qr') {
@@ -1769,7 +1804,7 @@ async function teacherMain() {
       <div class="tabs">${range(TN).map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;GN4=GN3=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
     <div class="panel">
       <div class="row" style="margin-bottom:12px;justify-content:space-between">
-        <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['qr', '📱 반별 QR<span class="en">Class QR</span>'], ['set', '설정<span class="en">Settings</span>']]
+        <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['clinic', '🩺 진료 기록지<span class="en">Clinic sheets</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['qr', '📱 반별 QR<span class="en">Class QR</span>'], ['set', '설정<span class="en">Settings</span>']]
           .map(t => `<button class="${TTAB === t[0] ? 'on' : ''}" onclick="TTAB='${t[0]}';teacherMain()">${t[1]}</button>`).join('')}</div>
         <button class="small ghost" onclick="teacherMain()">🔄 새로고침 · Refresh</button>
       </div>${body}</div></div>`;
@@ -2106,6 +2141,121 @@ function pickReply(c, groupNos) {
   const reps = (c.replies || []).filter(r => r.lines && r.lines.length);
   const bad = r => r.lines.filter(l => l && !lineOK(l)).length;
   return reps.slice().sort((a, b) => (bad(a) - bad(b)) || ((groupNos.includes(b.reply_no) ? 1 : 0) - (groupNos.includes(a.reply_no) ? 1 : 0)) || ((b.best ? 1 : 0) - (a.best ? 1 : 0)))[0] || null;
+}
+/* ---- 진료 기록지: 환자가 자기 문진표를 들고 다니고, 보건 선생님이 옆 칸에 약과 조언을 적어 줘요 ---- */
+let CLINIC_SLOT = 1, CLINIC_BOX = 4;
+function clinicTab(cards) {
+  const list = clinicCards(cards);
+  return `<div class="row" style="margin-bottom:10px;gap:8px">
+      <span class="ko" style="font-size:20px">어떤 문진표로? <span class="eni">Which form</span></span>
+      ${[[1, '문진표 1'], [2, '문진표 2'], [0, '둘 다 (1인 2장)']].map(([v, t]) => `<button class="small ${CLINIC_SLOT === v ? '' : 'ghost'}" onclick="CLINIC_SLOT=${v};teacherMain()">${t}</button>`).join('')}
+      <span class="ko" style="font-size:20px;margin-left:10px">진료 칸</span>
+      ${[3, 4].map(v => `<button class="small ${CLINIC_BOX === v ? '' : 'ghost'}" onclick="CLINIC_BOX=${v};teacherMain()">${v}칸</button>`).join('')}
+      <button class="small sun" onclick="printClinic()">🖨️ 인쇄 (A4 가로, 1인 1장) · Print</button>
+      <button class="small" onclick="pairSetup()">⏱️ 짝 진료 타이머 (칠판) · Timer</button></div>
+    <p class="muted" style="margin:0 0 8px">학생마다 <b>자기 문진표 + 진료 칸</b>이 있는 A4 한 장을 들고 다녀요. 보건 선생님 역 학생이 문진표를 듣고 <b>약에 체크</b>하고 <b>조언을 영어로</b> 써 줘요.
+      다른 준비물은 필요 없어요. 오타·문장 부호는 자동으로 고치고, 장난 문장은 빼서 인쇄해요. 문진표가 2장인 학생은 '문진표 1'에 없으면 2를 써요.
+      <span class="en">Each student carries one A4 sheet: their form + nurse boxes.</span></p>
+    <p class="muted">인쇄될 장수: <b>${list.length}장</b></p>
+    <div id="clinicPrev">${list.slice(0, 2).map(clinicSheet).join('') || '<p class="muted">제출한 문진표가 없어요.</p>'}</div>
+    ${list.length > 2 ? `<p class="muted">미리보기는 2장만 보여요. 인쇄하면 ${list.length}장이 모두 나와요.</p>` : ''}`;
+}
+function clinicCards(cards) {
+  const ok = cards.filter(c => !c.hidden);
+  const byNo = {}; ok.forEach(c => (byNo[c.student_no] = byNo[c.student_no] || []).push(c));
+  const out = [];
+  Object.keys(byNo).map(Number).sort((a, b) => a - b).forEach(no => {
+    const cs = byNo[no].sort((a, b) => (a.slot || 1) - (b.slot || 1));
+    if (CLINIC_SLOT === 0) out.push(...cs);
+    else out.push(cs.find(c => (c.slot || 1) === CLINIC_SLOT) || cs[0]);
+  });
+  return out;
+}
+function clinicSheet(c) {
+  const lines = (c.card_lines || []).filter((l, k) => k === 0 || lineOK(l)).map(fixText);
+  const box = k => `<div class="cbox"><div class="cb-top"><b>진료 ${k}</b><span>보건 선생님 Nurse: <i></i></span></div>
+      <div class="cb-meds">💊 ${Object.keys(MEDS).map(m => `<span>☐ <img src="img/${MEDS[m].img}.png" alt="">${MEDS[m].name.replace(' Medicine', '')}</span>`).join('')}</div>
+      <div class="cb-adv">📝 <b>Advice</b> <i></i></div><div class="cb-adv2"><i></i></div></div>`;
+  return `<div class="csheet">
+    <div class="cleft">
+      <div class="ch">📋 Patient Form <span>문진표 · ${TCLS}반 ${c.student_no}번${(c.slot || 1) === 2 ? ' ②' : ''}</span></div>
+      <div class="cpat">${pic(avImg(c.avatar, 'sick'), avEmoji(c.avatar), '', 'width:110px;height:110px;font-size:80px')}
+        <div class="cname">${esc(c.guest_name || '')}</div></div>
+      <div class="clines">${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>
+      <div class="cguide"><b>Nurse:</b> Hello. What's wrong? → <b>Patient:</b> (문진표 읽기) → <b>Nurse:</b> That's too bad. Take this medicine. + 조언 → <b>Patient:</b> Thank you.</div>
+    </div>
+    <div class="cright"><div class="ch">🩺 Nurse's Notes <span>진료 기록</span></div>${Array.from({ length: CLINIC_BOX }, (_, k) => box(k + 1)).join('')}</div>
+  </div>`;
+}
+function printClinic() {
+  const html = clinicCards(TD.cards || []).map(clinicSheet).join('');
+  if (!html) return toast('인쇄할 문진표가 없어요\nNo forms.');
+  printWith(html, 'size:A4 landscape;margin:8mm');
+}
+/* ---- 짝 진료 라운드 타이머 (칠판) ---- */
+let PT = { rounds: 4, sec: 150, move: 30 };
+function pairSetup() {
+  stopTimer();
+  $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="teacherMain()">← 교사 모드 <span class="eni">Teacher</span></button><h2>⏱️ 짝 진료 타이머<span class="en">Pair clinic timer</span></h2></div>
+    <div class="panel bigscreen" style="max-width:980px;margin:0 auto">
+      <ol class="pt-how">
+        <li>두 줄로 마주 앉아요. <b>왼쪽 줄 = A</b>, <b>오른쪽 줄 = B</b> <span class="eni">Sit in two rows facing each other.</span></li>
+        <li>① A가 환자, B가 보건 선생님 → ② 역할 바꾸기 <span class="eni">Take turns.</span></li>
+        <li>③ <b>문진표를 서로 바꿔 들고</b>, <b>B 줄만 한 칸 옆으로</b> 이동해요. <span class="eni">Swap sheets, B row moves one seat.</span></li>
+        <li>마지막에 기록지를 주인에게 돌려주고 제일 좋은 처방에 ❤️ <span class="eni">Return sheets and pick your favorite.</span></li>
+      </ol>
+      <div class="row" style="gap:18px;justify-content:center;margin:16px 0">
+        <label class="ko" style="font-size:24px">라운드 <select id="ptR" style="font-size:24px">${[2, 3, 4, 5, 6].map(n => `<option ${n === PT.rounds ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="ko" style="font-size:24px">한 사람 진료 시간 <select id="ptS" style="font-size:24px">${[[90, '1분 30초'], [120, '2분'], [150, '2분 30초'], [180, '3분'], [240, '4분']].map(([v, t]) => `<option value="${v}" ${v === PT.sec ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      </div>
+      <p class="center muted">시간은 넉넉하게 정하고, 대부분 끝나면 <b>⏭ 다음</b>을 눌러 넘어가요. 늦으면 <b>+30초</b>. 경쟁이 아니라 순서 안내용 타이머예요.</p>
+      <div class="center"><button class="red" style="font-size:30px" onclick="PT.rounds=+ptR.value;PT.sec=+ptS.value;pairRun()">▶ 시작 · Start</button></div>
+    </div></div>`;
+}
+function pairSteps() {
+  const st = [];
+  for (let r = 1; r <= PT.rounds; r++) {
+    st.push({ r, t: PT.sec, kind: 'A', title: '🤒 A 환자 · 🩺 B 보건 선생님', en: 'A: patient · B: nurse' });
+    st.push({ r, t: PT.sec, kind: 'B', title: '🩺 A 보건 선생님 · 🤒 B 환자', en: 'A: nurse · B: patient' });
+    if (r < PT.rounds) st.push({ r, t: PT.move, kind: 'move', title: '🔄 문진표 바꾸기 → B 줄 한 칸 이동', en: 'Swap sheets · B row moves' });
+  }
+  st.push({ r: PT.rounds, t: 300, kind: 'end', title: '💌 기록지를 주인에게 돌려주기 → ❤️ 고르기', en: 'Return sheets · pick your favorite' });
+  return st;
+}
+let PR = null;
+function pairRun() { PR = { steps: pairSteps(), i: 0, left: 0, pause: false }; pairGo(0); }
+function pairGo(i) {
+  stopTimer();
+  if (i >= PR.steps.length) return pairSetup();
+  PR.i = i; PR.left = PR.steps[i].t; PR.pause = false;
+  try { sfx(PR.steps[i].kind === 'end' ? 'end' : 'ok'); } catch (e) {}
+  pairDraw();
+  TMR = setInterval(() => {
+    if (PR.pause) return;
+    PR.left--;
+    if (PR.left === 10) { try { sfx('pass'); } catch (e) {} }
+    if (PR.left <= 0) { if (PR.steps[PR.i].kind === 'end') { stopTimer(); PR.left = 0; pairDraw(); return; } return pairGo(PR.i + 1); }
+    pairDraw();
+  }, 1000);
+}
+function pairDraw() {
+  const s = PR.steps[PR.i], m = Math.floor(PR.left / 60), sec = String(PR.left % 60).padStart(2, '0');
+  const tips = { A: '먼저 끝난 짝은 처방을 소리 내어 한 번 더 읽어 줘요. <span class="eni">Done early? Read the advice aloud again.</span>',
+    B: '먼저 끝난 짝은 처방을 소리 내어 한 번 더 읽어 줘요. <span class="eni">Done early? Read the advice aloud again.</span>',
+    move: '내가 들고 있는 문진표를 짝에게 주고, 짝의 문진표를 받아요. <span class="eni">Give your sheet, take your partner\'s.</span>',
+    end: '친구 4명이 써 준 처방을 읽어 보고, 제일 좋은 처방에 ❤️를 그려요.<span class="eni">Read the notes and draw ❤️ on the best one.</span>' };
+  $app.innerHTML = `<div class="wrap"><div class="top"><button class="ghost small" onclick="stopTimer();pairSetup()">← 설정 <span class="eni">Setup</span></button>
+      <h2>⏱️ ${s.kind === 'end' ? '마무리 · Wrap-up' : `라운드 ${s.r} / ${PT.rounds} · Round ${s.r}`}</h2></div>
+    <div class="panel bigscreen center pt-${s.kind}">
+      <div class="pt-dots">${PR.steps.map((x, k) => `<i class="${k < PR.i ? 'done' : k === PR.i ? 'now' : ''}"></i>`).join('')}</div>
+      <div class="ko pt-title">${s.title}</div><div class="eni" style="font-size:24px">${s.en}</div>
+      <div class="pt-time ${PR.left <= 10 && s.kind !== 'end' ? 'hurry' : ''}">${m}:${sec}</div>
+      <p style="font-size:22px">${tips[s.kind]}</p>
+      <div class="row" style="justify-content:center;gap:12px">
+        <button class="ghost" onclick="PR.pause=!PR.pause;pairDraw()">${PR.pause ? '▶ 계속' : '⏸ 멈춤'}</button>
+        <button class="ghost" onclick="PR.left+=30;pairDraw()">+30초</button>
+        <button class="sun" onclick="pairGo(PR.i+1)">⏭ 다음 · Next</button></div>
+    </div></div>`;
 }
 function gStep(sz, d) {
   if (sz === 4) GN4 = Math.max(0, Math.min(15, GN4 + d)); else GN3 = Math.max(0, Math.min(15, GN3 + d));
