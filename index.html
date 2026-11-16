@@ -2143,7 +2143,16 @@ function pickReply(c, groupNos) {
   return reps.slice().sort((a, b) => (bad(a) - bad(b)) || ((groupNos.includes(b.reply_no) ? 1 : 0) - (groupNos.includes(a.reply_no) ? 1 : 0)) || ((b.best ? 1 : 0) - (a.best ? 1 : 0)))[0] || null;
 }
 /* ---- 진료 기록지: 환자가 자기 문진표를 들고 다니고, 보건 선생님이 옆 칸에 약과 조언을 적어 줘요 ---- */
-let CLINIC_SLOT = 1, CLINIC_BOX = 4;
+let CLINIC_SLOT = 1, CLINIC_BOX = 4, CLINIC_SAMPLE = 0;
+// 결석생용 샘플 문진표
+const CLINIC_SAMPLES = [
+  { avatar: 'snowman', guest_name: 'Snowy', card_lines: ["Hello, I'm Snowy.", 'I have a cold.', 'I have a fever, too.', 'I played in the snow.', "I'm tired."] },
+  { avatar: 'dino', guest_name: 'Dino', card_lines: ["Hello, I'm Dino.", 'I have a stomachache.', 'I have a headache, too.', 'I ate too much pizza.'] },
+  { avatar: 'robot', guest_name: 'Robo', card_lines: ["Hello, I'm Robo.", 'I have a headache.', 'I have a runny nose, too.', 'I played games all night.', "I'm thirsty."] },
+  { avatar: 'penguin', guest_name: 'Pengu', card_lines: ["Hello, I'm Pengu.", 'I have a runny nose.', 'I have a cold, too.', 'I swam in cold water.'] },
+  { avatar: 'ghost', guest_name: 'Boo', card_lines: ["Hello, I'm Boo.", 'I have a fever.', 'I have a stomachache, too.', 'I ate too much ice cream.', "I'm hungry."] },
+  { avatar: 'alien', guest_name: 'Zip', card_lines: ["Hello, I'm Zip.", 'I have a headache.', 'I have a fever, too.', 'I ran very fast.', "I'm tired."] }
+];
 function clinicTab(cards) {
   const list = clinicCards(cards);
   return `<div class="row" style="margin-bottom:10px;gap:8px">
@@ -2151,12 +2160,13 @@ function clinicTab(cards) {
       ${[[1, '문진표 1'], [2, '문진표 2'], [0, '둘 다 (1인 2장)']].map(([v, t]) => `<button class="small ${CLINIC_SLOT === v ? '' : 'ghost'}" onclick="CLINIC_SLOT=${v};teacherMain()">${t}</button>`).join('')}
       <span class="ko" style="font-size:20px;margin-left:10px">진료 칸</span>
       ${[3, 4].map(v => `<button class="small ${CLINIC_BOX === v ? '' : 'ghost'}" onclick="CLINIC_BOX=${v};teacherMain()">${v}칸</button>`).join('')}
+      <span class="stepper">결석생용 샘플 <button class="small ghost" onclick="CLINIC_SAMPLE=Math.max(0,CLINIC_SAMPLE-1);teacherMain()">−</button><b>${CLINIC_SAMPLE}</b><button class="small ghost" onclick="CLINIC_SAMPLE=Math.min(12,CLINIC_SAMPLE+1);teacherMain()">+</button></span>
       <button class="small sun" onclick="printClinic()">🖨️ 인쇄 (A4 가로, 1인 1장) · Print</button>
       <button class="small" onclick="pairSetup()">⏱️ 짝 진료 타이머 (칠판) · Timer</button></div>
     <p class="muted" style="margin:0 0 8px">학생마다 <b>자기 문진표 + 진료 칸</b>이 있는 A4 한 장을 들고 다녀요. 보건 선생님 역 학생이 문진표를 듣고 <b>약에 체크</b>하고 <b>조언을 영어로</b> 써 줘요.
       다른 준비물은 필요 없어요. 오타·문장 부호는 자동으로 고치고, 장난 문장은 빼서 인쇄해요. 문진표가 2장인 학생은 '문진표 1'에 없으면 2를 써요.
       <span class="en">Each student carries one A4 sheet: their form + nurse boxes.</span></p>
-    <p class="muted">인쇄될 장수: <b>${list.length}장</b></p>
+    <p class="muted">인쇄될 장수: <b>${list.length}장</b>${CLINIC_SAMPLE ? ` (샘플 ${CLINIC_SAMPLE}장 포함)` : ''} · 문진표를 안 쓴 결석생에게는 <b>샘플 문진표</b>를 줘요. 증상이 서로 다른 6가지가 차례로 나와요.</p>
     <div id="clinicPrev">${list.slice(0, 2).map(clinicSheet).join('') || '<p class="muted">제출한 문진표가 없어요.</p>'}</div>
     ${list.length > 2 ? `<p class="muted">미리보기는 2장만 보여요. 인쇄하면 ${list.length}장이 모두 나와요.</p>` : ''}`;
 }
@@ -2169,6 +2179,7 @@ function clinicCards(cards) {
     if (CLINIC_SLOT === 0) out.push(...cs);
     else out.push(cs.find(c => (c.slot || 1) === CLINIC_SLOT) || cs[0]);
   });
+  for (let k = 0; k < CLINIC_SAMPLE; k++) out.push({ ...CLINIC_SAMPLES[k % CLINIC_SAMPLES.length], sample: k + 1 });
   return out;
 }
 function clinicSheet(c) {
@@ -2178,7 +2189,7 @@ function clinicSheet(c) {
       <div class="cb-adv">📝 <b>Advice</b> <i></i></div><div class="cb-adv2"><i></i></div></div>`;
   return `<div class="csheet">
     <div class="cleft">
-      <div class="ch">📋 Patient Form <span>문진표 · ${TCLS}반 ${c.student_no}번${(c.slot || 1) === 2 ? ' ②' : ''}</span></div>
+      <div class="ch">📋 Patient Form <span>문진표 · ${c.sample ? `샘플 ${c.sample} · Sample` : `${TCLS}반 ${c.student_no}번${(c.slot || 1) === 2 ? ' ②' : ''}`}</span></div>
       <div class="cpat">${pic(avImg(c.avatar, 'sick'), avEmoji(c.avatar), '', 'width:110px;height:110px;font-size:80px')}
         <div class="cname">${esc(c.guest_name || '')}</div></div>
       <div class="clines">${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>
