@@ -466,6 +466,9 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 .slots{display:flex;gap:10px;margin:0 0 14px}.slots button{flex:1;background:#fff;color:var(--ink);border:3px solid var(--line);box-shadow:none;position:relative;font-size:20px}.slots button.on{border-color:var(--red);background:#fff1f2}
 .qrgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.qrcell{border:3px solid var(--line);border-radius:18px;padding:12px;text-align:center;display:grid;gap:8px;justify-items:center}.qrcell canvas{width:100%;max-width:200px;height:auto}
 .stepper{display:inline-flex;align-items:center;gap:4px;font-family:Jua;font-size:18px;border:2px solid var(--line);border-radius:12px;padding:2px 8px}.stepper b{min-width:22px;text-align:center;font-size:20px}
+.scr-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px;color:#a05a5a}.scr-tools s{color:#999}
+.ln [contenteditable]:focus{outline:2px dashed var(--sun);background:#fffbe8}
+@media print{.noprint{display:none!important}}
 </style>
 </head>
 <body>
@@ -1197,8 +1200,25 @@ const GRAMMAR = [
   [/\bI have (cold|fever|headache|runny nose|stomachache|toothache)\b/i, 'I have a ___', "아픈 곳 앞에 a를 넣어요. (I have a cold.)"],
   [/\btoo much (candies|cookies|chips|apples)\b/i, 'too many', "셀 수 있는 것(-s)에는 too many를 써요."],
   [/\bdon't eats\b/i, "don't eat", "don't 다음에는 eat을 그대로 써요."],
-  [/\bget some sleeps\b/i, 'get some sleep', "sleep에는 s를 붙이지 않아요."]
+  [/\bget some sleeps\b/i, 'get some sleep', "sleep에는 s를 붙이지 않아요."],
+  [/\bmach\b/i, 'much', "'많이'는 much예요."], [/\bto much\b/i, 'too much', "'너무 많이'는 too much예요."],
+  [/\bgo to (the |my |your )?home\b/i, 'go home', "home 앞에는 to를 쓰지 않아요. (go home)"],
+  [/\bdon'?t (ate|drank|said|played)\b/i, "don't + 동사원형", "don't 다음에는 eat, drink처럼 원래 모양을 써요."],
+  [/\bI want too? go\b/i, 'I want to go', "want 다음에는 to go를 써요."],
+  [/\bcan I ate\b/i, 'Can I eat', "Can I 다음에는 원래 모양(eat)을 써요."],
+  [/\b(gat|ger|som|were a warm)\b/i, 'get / some / wear', "철자를 확인해요."],
+  [/\bget will soon\b/i, 'get well soon', "well이 맞아요."], [/\bgo to bad\b/i, 'go to bed', "침대는 bed예요."]
 ];
+// 문장 부호 확인
+function punctIssues(t) {
+  const out = [];
+  if (/[!?.]{3,}|[!?]{2,}/.test(t)) out.push('❗ 문장 부호는 하나만 써요. (!!! → !) <span class="eni">Use one punctuation mark.</span>');
+  t.split(/(?<=[.!?])\s+/).forEach(x => {
+    if (/^(can|may|do|did|does|are|is|what|where|why|how|will|could|should)\b/i.test(x.trim()) && /\.$/.test(x.trim())) out.push(`❓ <b>${esc(x.trim())}</b> → 묻는 문장은 물음표(?)로 끝나요. <span class="eni">Questions end with ?</span>`);
+  });
+  if (/[a-z][A-Z]/.test(t)) out.push('🔠 대문자는 문장 첫 글자와 이름에만 써요. <span class="eni">Use capitals only at the start.</span>');
+  return out;
+}
 function editDist(a, b) {
   if (Math.abs(a.length - b.length) > 2) return 9;
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
@@ -1242,7 +1262,9 @@ const JUNK = [
   [/\bsix\s*-?\s*seven\b|sixseven/i, 'six seven'],
   [/([a-z])\1{3,}/i, '같은 글자 반복'],
   [/\b(\w+)\b(?:\W+\1\b){2,}/i, '같은 말 반복'],
-  [/[bcdfghjklmnpqrstvwxz]{5,}/i, '아무렇게나 친 글자']
+  [/[bcdfghjklmnpqrstvwxz]{5,}/i, '아무렇게나 친 글자'],
+  [/\d{4,}/, '긴 숫자'],
+  [/\b(die|died|dead|dying|kill|poison|uranium|titanium|gangster|stupid|idiot|ugly|pig|dirty|alive|covid|get out|go away|so what|prettiest|dinosaur)\b/i, '수업에 어울리지 않는 말']
 ];
 function junkIn(t) { const j = JUNK.find(([re]) => re.test(String(t || ''))); return j ? j[1] : null; }
 function englishIssues(texts) {
@@ -1252,6 +1274,7 @@ function englishIssues(texts) {
   texts.filter(Boolean).forEach(t => {
     const flagged = new Set();
     GRAMMAR.forEach(([re, fix, ko]) => { const m = t.match(re); if (m) { issues.push(`📝 <b>${esc(m[0])}</b> → <b>${esc(fix)}</b> · ${esc(ko)}`); m[0].toLowerCase().split(/\s+/).forEach(x => flagged.add(x)); } });
+    punctIssues(t).forEach(x => issues.push(x));
     (t.match(/[A-Za-z’']+/g) || []).forEach((w, i) => {
       if (!flagged.has(w.toLowerCase()) && !wordOK(w, i === 0)) { const sg = suggest(w.toLowerCase()); issues.push(`🔤 <b>${esc(w)}</b>: 사전에 없는 단어예요${sg.length ? ` → 혹시 <b>${sg.map(esc).join(', ')}</b>?` : '. 철자를 확인해요.'}`); }
     });
@@ -2011,7 +2034,7 @@ function groupSizes(n, base) {
   return g >= 2 ? [...f(g - 2, 3), 4, 4] : g === 1 ? [3, 2] : [2];
 }
 function makeGroups(cards) {
-  const members = shuffle(cards.filter(c => !c.hidden));
+  const members = shuffle(cards.filter(c => !c.hidden)).sort((a, b) => cardScore(a) - cardScore(b));
   let sizes;
   if (GN4 != null && GN3 != null) {
     sizes = [...Array(GN4).fill(4), ...Array(GN3).fill(3)].slice(0, members.length);   // 모둠마다 문진표가 1장은 있어야 해요
@@ -2026,17 +2049,63 @@ function makeGroups(cards) {
   sizes.forEach((sz, gi) => {
     const g = pools[gi];
     // 같은 모둠 친구가 답장한 문진표를 환자 역으로 먼저 골라요
-    let patientCard = g.find(c => (c.replies || []).some(r => g.some(m => m.student_no === r.reply_no))) || g.find(c => (c.replies || []).length) || g[0];
+    const gs = g.slice().sort((a, b) => cardScore(a) - cardScore(b));
+    let patientCard = gs.find(c => cardScore(c) === cardScore(gs[0]) && (c.replies || []).some(r => g.some(m => m.student_no === r.reply_no))) || gs.find(c => (c.replies || []).length) || gs[0];
     const rest = g.filter(c => c !== patientCard);
     const reps = patientCard.replies || [];
     let nurse = rest.find(c => reps.some(r => r.reply_no === c.student_no)) || rest[0];
-    const usedReply = (nurse && reps.find(r => r.reply_no === nurse.student_no)) || reps[0] || null;
+    const usedReply = pickReply(patientCard, g.map(m => m.student_no));
     const others = rest.filter(c => c !== nurse);
     groups.push({ size: sz, card: patientCard, reply: usedReply, roles: {
       patient: patientCard.student_no, nurse: nurse ? nurse.student_no : '', friend: others[0] ? others[0].student_no : '',
       teacher: others[1] ? others[1].student_no : '', friend2: others[2] ? others[2].student_no : '' } });
   });
   return groups;
+}
+/* ---- 대본용: 흔한 실수 자동 고치기 + 이상한 문장 거르기 ---- */
+const AUTOFIX = [
+  [/\bmach\b/gi, 'much'], [/\bto much\b/gi, 'too much'], [/\bdon eat\b/gi, "don't eat"], [/\bdon'?t (ate|eaten)\b/gi, "don't eat"],
+  [/\bdon'?t drank\b/gi, "don't drink"], [/\bdon'?t said\b/gi, "don't say"], [/\bdon'?t go played\b/gi, "don't play"], [/\bdon'?t too much eat\b/gi, "don't eat too much"],
+  [/\b(gat|ger)\b/gi, 'get'], [/\bsom\b/gi, 'some'], [/\bget will soon\b/gi, 'get well soon'], [/\b(go|get) to bad\b/gi, 'go to bed'],
+  [/\bwere a\b/gi, 'wear a'], [/\bgo to (the |my |your )?home\b/gi, 'go home'], [/\bwant (too |to )?go\b/gi, 'want to go'],
+  [/\bcan I ate\b/gi, 'can I eat'], [/\bdrink many water\b/gi, 'drink a lot of water'], [/\btoo many food\b/gi, 'too much food'],
+  [/\beat many (ice cream|food)\b/gi, 'eat too much $1'], [/\bwear a warm coats\b/gi, 'wear a warm coat'], [/\bwear warm coat\b/gi, 'wear a warm coat'],
+  [/\bwear (a )?warm water\b/gi, 'drink warm water'], [/\bI'm have\b/gi, 'I have'], [/\bgo class ?room\b/gi, 'go to the classroom'],
+  [/\bgo see a your\b/gi, 'go see your'], [/\bout side\b/gi, 'outside'], [/\bgo some rest\b/gi, 'get some rest'], [/\bget soon sleep\b/gi, 'get some sleep'],
+  [/\bate too ice cream\b/gi, 'ate too much ice cream'], [/\bI ate water\b/gi, 'I drank water'], [/\bplayed played\b/gi, 'played'],
+  [/\bplayed in snow\b/gi, 'played in the snow'], [/\bWeII\b/g, 'well'], [/\bget some\.$/gi, 'get some rest.'], [/\bget some vitamin\b/gi, 'take some vitamins']
+];
+function fixText(t) {
+  let x = String(t || '').replace(/[`’]/g, "'").replace(/!+1+/g, '!')
+    .replace(/[.!?\/]{2,}/g, m => (m.match(/[?]/) ? '?' : m.match(/!/) ? '!' : '.'))
+    .replace(/\s+([.,!?])/g, '$1').replace(/,(?=\S)/g, ', ').replace(/\s{2,}/g, ' ').trim();
+  AUTOFIX.forEach(([re, to]) => { x = x.replace(re, to); });
+  x = x.replace(/\b[A-Za-z]+\b/g, w => ((/[A-Z]/.test(w.slice(1)) && w.length > 1 && !['TV', 'OK'].includes(w)) ? w.toLowerCase() : w));
+  x = x.replace(/\bi\b/g, 'I').replace(/\bi'm\b/gi, "I'm");
+  x = x.split(/(?<=[.!?])\s+/).map(y => {
+    y = y.trim(); if (!y) return y;
+    if (!/[.!?]$/.test(y)) y += '.';
+    const q = /^(can|may|do|did|does|are|is|what|where|why|how|will|could|should)\b/i.test(y);
+    if (q && /\.$/.test(y)) y = y.slice(0, -1) + '?';
+    if (!q && /\?$/.test(y) && !/^(so what|okay|ok|really|right)\b/i.test(y)) y = y.slice(0, -1) + '.';
+    return y[0].toUpperCase() + y.slice(1);
+  }).filter(Boolean).join(' ');
+  return x.replace(/(\w) too([.!])/g, '$1, too$2');
+}
+const lineOK = l => !!l && !junkIn(l) && /[a-z]{2,}/i.test(l);
+const cardScore = c => (c.card_lines || []).slice(1).filter(l => !lineOK(l)).length * 3 + (c.hidden ? 99 : 0);
+function swapCard(i) {
+  const used = new Set(GROUPS.map(g => g.card.id));
+  const cand = (TD.cards || []).filter(c => !c.hidden && !used.has(c.id)).sort((a, b) => cardScore(a) - cardScore(b));
+  if (!cand.length) return toast('바꿀 수 있는 다른 문진표가 없어요\nNo other forms.');
+  const c = cand[0], g = GROUPS[i];
+  g.card = c; g.reply = pickReply(c, []);
+  teacherMain();
+}
+function pickReply(c, groupNos) {
+  const reps = (c.replies || []).filter(r => r.lines && r.lines.length);
+  const bad = r => r.lines.filter(l => l && !lineOK(l)).length;
+  return reps.slice().sort((a, b) => (bad(a) - bad(b)) || ((groupNos.includes(b.reply_no) ? 1 : 0) - (groupNos.includes(a.reply_no) ? 1 : 0)) || ((b.best ? 1 : 0) - (a.best ? 1 : 0)))[0] || null;
 }
 function gStep(sz, d) {
   if (sz === 4) GN4 = Math.max(0, Math.min(15, GN4 + d)); else GN3 = Math.max(0, Math.min(15, GN3 + d));
@@ -2059,25 +2128,28 @@ function scriptTab(cards) {
     <p class="muted" style="margin:0 0 8px">문진표 ${usable.length}장으로 대본 ${GROUPS.length}개를 만들었어요. 우리 반 모둠 수에 맞게 <b>4명 모둠·3명 모둠 수</b>를 바꿔 보세요. 모둠마다 문진표 1장이 대본이 돼요.
       ${GN4 + GN3 > usable.length ? `<b style="color:var(--red)">문진표가 ${usable.length}장이라 대본은 ${usable.length}개까지만 만들어져요.</b>` : ''}
       <span class="en">${usable.length} forms → ${GROUPS.length} scripts. Set how many groups of 4 and 3.</span></p>
-    <p class="muted" style="margin:0 0 6px">대본을 받으면 모둠 친구들이 역할 칸에 각자 이름을 써요. 맨 아래에 어느 학생의 문진표와 처방으로 만든 대본인지 적혀 있어요.
+    <p class="muted" style="margin:0 0 6px">오타·문장 부호는 자동으로 고치고, 장난스러운 문장은 빼서 만들어요. <b>대사를 눌러 직접 고칠 수도 있어요</b>(인쇄 전, 다시 섞으면 처음으로 돌아가요). 대본을 받으면 모둠 친구들이 역할 칸에 각자 이름을 써요. 맨 아래에 어느 학생의 문진표와 처방으로 만든 대본인지 적혀 있어요.
       <span class="en">Students write their names on the printed script.</span></p>
     <div id="scripts">${GROUPS.map((g, i) => scriptHTML(g, i)).join('') || '<p class="muted">제출한 문진표가 있어야 대본을 만들 수 있어요.<span class="en">Scripts need patient forms first.</span></p>'}</div>`;
 }
 function scriptHTML(g, i) {
   const c = g.card, n = c.guest_name || 'Friend', sz = g.size;
-  const all = (c.card_lines || []).slice(1).map(tidy).filter(Boolean);          // Hello, I'm ~ 빼고
-  const exs = (c.extra || '').split('\n').map(x => tidy(x)).filter(Boolean);
-  let sym = all.filter(l => !exs.includes(l)), ext = all.filter(l => exs.includes(l));
-  if (!sym.length) { sym = all.slice(0, 1); ext = all.slice(1); }
-  const symT = sym.join(' '), extT = ext.join(' ') || "I don't feel well.";
+  const dropped = [];
+  const raw = (c.card_lines || []).slice(1).filter(Boolean);                     // Hello, I'm ~ 빼고
+  const exs = (c.extra || '').split('\n').map(x => x.trim()).filter(Boolean);
+  let sym = raw.filter(l => !exs.includes(l.trim())), ext = raw.filter(l => exs.includes(l.trim()));
+  if (!sym.length) { sym = raw.slice(0, 1); ext = raw.slice(1); }
+  ext = ext.filter(l => lineOK(l) || (dropped.push(l), false));
+  const symT = sym.map(fixText).join(' '), extT = ext.map(fixText).join(' ') || "I don't feel well.";
   const first = (c.symptoms || [])[0], act = first && SYM[first] ? SYM[first].act : '아픈 표정으로';
   // 처방: [위로, 약, 조언, 더 할 말]
   const rl = (g.reply && g.reply.lines && g.reply.lines.length ? g.reply.lines : null);
-  const r0 = rl && rl[0] ? tidy(rl[0]) : "That's too bad.";
-  const r1 = rl && rl[1] ? tidy(rl[1]) : 'Take this medicine.';
-  const rAdv = rl ? rl.slice(2).filter(Boolean).map(tidy).join(' ') : nurseLine(adviceFor(c.feel)).replace(/^That's too bad\.\s*Take this medicine\.\s*/, '');
+  const r0 = rl && rl[0] && lineOK(rl[0]) ? fixText(rl[0]) : "That's too bad.";
+  const r1 = rl && rl[1] && lineOK(rl[1]) ? fixText(rl[1]) : 'Take this medicine.';
+  const advOK = rl ? rl.slice(2).filter(Boolean).filter(l => lineOK(l) || (dropped.push(l), false)) : [];
+  const rAdv = advOK.length ? advOK.map(fixText).join(' ') : nurseLine(adviceFor(c.feel)).replace(/^That's too bad\.\s*Take this medicine\.\s*/, '');
   const meds = (c.symptoms || []).filter(s => MEDS[s]);
-  const L = (role, text, dir) => `<div class="ln"><b>${role}</b>${dir ? `<em>(${dir}) </em>` : ''}${esc(text)}</div>`;
+  const L = (role, text, dir) => `<div class="ln"><b>${role}</b>${dir ? `<em>(${dir}) </em>` : ''}<span contenteditable="true">${esc(text)}</span></div>`;
   const box = label => `<div><b>${label}</b><span class="nameline">이름 · Name</span></div>`;
   const S1 = [], S2 = [];
   if (sz >= 4) {                                   // 담임 선생님이 있는 모둠
@@ -2101,6 +2173,8 @@ function scriptHTML(g, i) {
     <div class="scene">Scene 2. 보건실 · Nurse's Office</div>${S2.join('')}
     <div class="medrow">💊 필요한 약 · Medicine: ${meds.map(s => `<b>${MEDS[s].name}</b>`).join(', ') || '-'}</div>
     <div class="owner">📋 문진표: ${TCLS}반 ${c.student_no}번${g.reply ? ` · 💊 처방: ${g.reply.reply_no}번` : ''} 학생의 글로 만든 대본이에요.</div>
+    <div class="noprint scr-tools">${dropped.length ? `<span class="dropped">✂️ 대본에서 뺀 문장: ${dropped.map(d => `<s>${esc(d)}</s>`).join(' · ')}</span>` : ''}
+      <button class="small ghost" onclick="swapCard(${i})">🔄 다른 문진표로 바꾸기</button></div>
   </div>`;
 }
 function printWith(html, pageCss) {
