@@ -391,14 +391,33 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 .ln b{display:inline-block;min-width:110px;font-family:"Jua";font-weight:400;color:var(--ink)}
 .ln em{color:#5d807b;font-style:normal;font-family:"Jua";font-size:15px;font-weight:400}
 .gc{border-top:2px dashed #cfe4df;margin-top:12px;padding-top:8px;font-size:15px}
+.ln .who{font-family:"Jua";color:var(--teal);font-size:.85em}
+.medrow{border-top:2px dashed #cfe4df;margin-top:10px;padding-top:6px;font-size:15px}
+.owner{margin-top:6px;font-size:14px;color:#5d807b}
+.nameline{display:block;border-bottom:1.5px solid #9ab;min-height:30px;color:#b4c6c2;font-size:12px;padding-top:12px}
+#printArea .medcard img{display:block}
 #printArea{display:none}
 @media print{
   body{background:#fff}
   body > *:not(#printArea){display:none!important}
   #printArea{display:block}
-  .scr{border:0;padding:0;margin:0;page-break-after:always;break-after:page}
-  .scr:last-child{page-break-after:auto}
-  @page{size:A4;margin:16mm}
+  .sheet2{display:grid;grid-template-columns:1fr 1fr;gap:10mm;page-break-after:always;break-after:page;height:190mm;overflow:hidden}
+  .sheet2:last-child{page-break-after:auto;break-after:auto}
+  .sheet2 .scr{border:0;border-right:1px dashed #bbb;border-radius:0;padding:0 6mm 0 0;margin:0}
+  .sheet2 .scr:last-child{border-right:0}
+  .sheet2 .scr h2{font-size:30px}
+  .sheet2 .ln{font-size:21px;margin:5px 0;line-height:1.45}
+  .sheet2 .ln b{min-width:0;margin-right:8px;font-size:17px}
+  .sheet2 .scene{font-size:22px;margin:14px 0 4px}
+  .sheet2 .roles div{font-size:18px}
+  .sheet2 .medrow{font-size:17px}
+  .sheet2 .owner{font-size:15px}
+  .sheet2 .roles{grid-template-columns:repeat(3,1fr)}
+  .medcard{page-break-after:always;break-after:page;height:185mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .medcard:last-child{page-break-after:auto;break-after:auto}
+  .medcard img{height:125mm;width:auto;max-width:250mm;object-fit:contain}
+  .medcard .mn{font-family:"Nunito";font-weight:900;font-size:64px;color:#1E4844;margin-top:6mm}
+  .medcard .mk{font-family:"Jua";font-size:36px;color:#5d807b}
 }
 /* ===== speed clinic (전자칠판) ===== */
 .sp-top{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;margin-bottom:12px}
@@ -446,6 +465,7 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 .menu button.shut{opacity:.55;filter:grayscale(.6)}
 .slots{display:flex;gap:10px;margin:0 0 14px}.slots button{flex:1;background:#fff;color:var(--ink);border:3px solid var(--line);box-shadow:none;position:relative;font-size:20px}.slots button.on{border-color:var(--red);background:#fff1f2}
 .qrgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.qrcell{border:3px solid var(--line);border-radius:18px;padding:12px;text-align:center;display:grid;gap:8px;justify-items:center}.qrcell canvas{width:100%;max-width:200px;height:auto}
+.stepper{display:inline-flex;align-items:center;gap:4px;font-family:Jua;font-size:18px;border:2px solid var(--line);border-radius:12px;padding:2px 8px}.stepper b{min-width:22px;text-align:center;font-size:20px}
 </style>
 </head>
 <body>
@@ -1588,7 +1608,7 @@ async function nrSend() {
    ========================================================= */
 let TID = null, TN = 4, TNAME = '';
 const TB = () => ((TID || 1) - 1) * 10;
-let TPW = null, TCLS = 1, TD = null, TTAB = 'students', GROUP_BASE = 4, GROUPS = null;
+let TPW = null, TCLS = 1, TD = null, TTAB = 'students', GROUP_BASE = 4, GROUPS = null, GN4 = null, GN3 = null;
 try { TPW = sessionStorage.getItem('hn_tpw'); } catch (e) {}
 async function teacher() {
   stopTimer();
@@ -1723,7 +1743,7 @@ async function teacherMain() {
   }
   $app.innerHTML = `<div class="wrap">
     <div class="top"><button class="ghost small" onclick="home()">← 처음 <span class="eni">Home</span></button><h2>🗂️ 교사 모드${TNAME && TID > 1 ? ` · ${esc(TNAME)}` : ''}<span class="en">Teacher</span></h2>
-      <div class="tabs">${range(TN).map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
+      <div class="tabs">${range(TN).map(c => `<button class="${c === TCLS ? 'on' : ''}" onclick="TCLS=${c};GROUPS=null;GN4=GN3=null;teacherMain()">${c}반<span class="en">Class ${c}</span></button>`).join('')}</div></div>
     <div class="panel">
       <div class="row" style="margin-bottom:12px;justify-content:space-between">
         <div class="tabs">${[['students', '학생<span class="en">Students</span>'], ['cards', `문진표 (${cards.length}장 · 답장 ${replied})<span class="en">Forms ${cards.length} · Replies ${replied}</span>`], ['report', '성적표 문구<span class="en">Report</span>'], ['goal', '목표 게이지<span class="en">Class goal</span>'], ['script', '역할극 대본<span class="en">Role-play scripts</span>'], ['qr', '📱 반별 QR<span class="en">Class QR</span>'], ['set', '설정<span class="en">Settings</span>']]
@@ -1983,19 +2003,28 @@ function groupSizes(n, base) {
     if (r === 0) return f(g, 4);
     if (r === 3) return [...f(g, 4), 3];
     if (r === 2) return g >= 1 ? [...f(g - 1, 4), 3, 3] : [2];
-    return g >= 2 ? [...f(g - 2, 4), 3, 3, 3] : g === 1 ? [5] : [1];
+    return g >= 2 ? [...f(g - 2, 4), 3, 3, 3] : g === 1 ? [3, 2] : [1];
   }
   const g = Math.floor(n / 3), r = n % 3;
   if (r === 0) return f(g, 3);
   if (r === 1) return g >= 1 ? [...f(g - 1, 3), 4] : [1];
-  return g >= 2 ? [...f(g - 2, 3), 4, 4] : g === 1 ? [5] : [2];
+  return g >= 2 ? [...f(g - 2, 3), 4, 4] : g === 1 ? [3, 2] : [2];
 }
 function makeGroups(cards) {
   const members = shuffle(cards.filter(c => !c.hidden));
-  const sizes = groupSizes(members.length, GROUP_BASE);
-  const groups = []; let i = 0;
-  sizes.forEach(sz => {
-    const g = members.slice(i, i + sz); i += sz;
+  let sizes;
+  if (GN4 != null && GN3 != null) {
+    sizes = [...Array(GN4).fill(4), ...Array(GN3).fill(3)].slice(0, members.length);   // 모둠마다 문진표가 1장은 있어야 해요
+  } else {
+    sizes = groupSizes(members.length, GROUP_BASE);
+    GN4 = sizes.filter(x => x === 4).length; GN3 = sizes.length - GN4;
+  }
+  // 문진표를 모둠에 골고루 나눠요 (모둠 인원보다 문진표가 적어도 모둠마다 1장 이상)
+  const pools = sizes.map(() => []);
+  members.forEach((c, k) => { const gi = k % sizes.length; if (pools[gi].length < sizes[gi]) pools[gi].push(c); });
+  const groups = [];
+  sizes.forEach((sz, gi) => {
+    const g = pools[gi];
     // 같은 모둠 친구가 답장한 문진표를 환자 역으로 먼저 골라요
     let patientCard = g.find(c => (c.replies || []).some(r => g.some(m => m.student_no === r.reply_no))) || g.find(c => (c.replies || []).length) || g[0];
     const rest = g.filter(c => c !== patientCard);
@@ -2004,73 +2033,95 @@ function makeGroups(cards) {
     const usedReply = (nurse && reps.find(r => r.reply_no === nurse.student_no)) || reps[0] || null;
     const others = rest.filter(c => c !== nurse);
     groups.push({ size: sz, card: patientCard, reply: usedReply, roles: {
-      patient: patientCard.student_no + '번', nurse: nurse ? nurse.student_no + '번' : '',
-      friend: others[0] ? others[0].student_no + '번' : '', teacher: others[1] ? others[1].student_no + '번' : '',
-      friend2: others[2] ? others[2].student_no + '번' : '' } });
+      patient: patientCard.student_no, nurse: nurse ? nurse.student_no : '', friend: others[0] ? others[0].student_no : '',
+      teacher: others[1] ? others[1].student_no : '', friend2: others[2] ? others[2].student_no : '' } });
   });
   return groups;
+}
+function gStep(sz, d) {
+  if (sz === 4) GN4 = Math.max(0, Math.min(15, GN4 + d)); else GN3 = Math.max(0, Math.min(15, GN3 + d));
+  if (GN4 + GN3 === 0) { if (sz === 4) GN4 = 1; else GN3 = 1; }
+  GROUPS = null; teacherMain();
 }
 function scriptTab(cards) {
   const usable = cards.filter(c => !c.hidden);
   if (!GROUPS) GROUPS = makeGroups(usable);
-  const n4 = GROUPS.filter(g => g.size >= 4).length, n3 = GROUPS.length - n4;
-  return `<div class="row" style="margin-bottom:10px">
-      <span class="ko" style="font-size:20px">기본 모둠 <span class="eni">Group size</span></span>
-      <button class="small ${GROUP_BASE === 4 ? '' : 'ghost'}" onclick="GROUP_BASE=4;GROUPS=null;teacherMain()">4인 기본 · 4</button>
-      <button class="small ${GROUP_BASE === 3 ? '' : 'ghost'}" onclick="GROUP_BASE=3;GROUPS=null;teacherMain()">3인 기본 · 3</button>
+  const counts = {}; GROUPS.forEach(g => counts[g.size] = (counts[g.size] || 0) + 1);
+  return `<div class="row" style="margin-bottom:10px;gap:8px">
+      <span class="ko" style="font-size:20px">모둠 인원 <span class="eni">Group size</span></span>
+      <span class="stepper">4명 모둠 <button class="small ghost" onclick="gStep(4,-1)">−</button><b>${GN4}</b><button class="small ghost" onclick="gStep(4,1)">+</button></span>
+      <span class="stepper">3명 모둠 <button class="small ghost" onclick="gStep(3,-1)">−</button><b>${GN3}</b><button class="small ghost" onclick="gStep(3,1)">+</button></span>
+      <span class="muted">= ${GN4 * 4 + GN3 * 3}명</span>
+      <button class="small ghost" onclick="GN4=GN3=null;GROUPS=null;teacherMain()">자동 · Auto</button>
       <button class="small ghost" onclick="GROUPS=null;teacherMain()">🔀 다시 섞기 · Shuffle</button>
-      <button class="small sun" onclick="printScripts()">🖨️ 대본 인쇄 · Print</button>
-      <span class="muted">문진표 ${usable.length}장 → 4인 ${n4}모둠 · 3인 ${n3}모둠 (남는 인원은 자동으로 3인/4인 조정)<span class="en">${usable.length} forms → ${n4} groups of 4 · ${n3} groups of 3</span></span></div>
-    <p class="muted" style="margin:0 0 6px">이름은 눌러서 고칠 수 있어요. 문진표를 쓴 학생이 환자, 답장을 쓴 학생이 같은 모둠이면 보건 선생님 역을 맡아요.<span class="en">Tap a name to edit it. The form writer plays the patient; the reply writer plays the nurse if in the same group.</span></p>
+      <button class="small sun" onclick="printScripts()">🖨️ 대본 인쇄 (A4에 2개씩) · Print</button>
+      <button class="small" onclick="printMeds()">💊 약 그림 인쇄 (A4) · Medicine cards</button></div>
+    <p class="muted" style="margin:0 0 8px">문진표 ${usable.length}장으로 대본 ${GROUPS.length}개를 만들었어요. 우리 반 모둠 수에 맞게 <b>4명 모둠·3명 모둠 수</b>를 바꿔 보세요. 모둠마다 문진표 1장이 대본이 돼요.
+      ${GN4 + GN3 > usable.length ? `<b style="color:var(--red)">문진표가 ${usable.length}장이라 대본은 ${usable.length}개까지만 만들어져요.</b>` : ''}
+      <span class="en">${usable.length} forms → ${GROUPS.length} scripts. Set how many groups of 4 and 3.</span></p>
+    <p class="muted" style="margin:0 0 6px">대본을 받으면 모둠 친구들이 역할 칸에 각자 이름을 써요. 맨 아래에 어느 학생의 문진표와 처방으로 만든 대본인지 적혀 있어요.
+      <span class="en">Students write their names on the printed script.</span></p>
     <div id="scripts">${GROUPS.map((g, i) => scriptHTML(g, i)).join('') || '<p class="muted">제출한 문진표가 있어야 대본을 만들 수 있어요.<span class="en">Scripts need patient forms first.</span></p>'}</div>`;
 }
 function scriptHTML(g, i) {
-  const c = g.card, G4 = g.size >= 4, name = c.guest_name || 'Friend';
-  const lines = (c.card_lines || []).slice(1);
-  const exs = (c.extra || '').split('\n');
-  const symLines = lines.filter(l => !exs.includes(l));
-  const first = (c.symptoms || [])[0];
-  const act = first && SYM[first] ? SYM[first].act : '아픈 표정으로';
-  const feelAct = c.feel && FEEL[c.feel] ? FEEL[c.feel].act : '';
-  const reply = g.reply && g.reply.lines && g.reply.lines.length ? g.reply.lines.join(' ') : nurseLine(adviceFor(c.feel));
-  const meds = (c.symptoms || []).filter(s => MEDS[s]).map(s => MEDS[s].name).join(', ');
-  const L = (who, text, dir) => `<div class="ln"><b>${who}</b>${dir ? `<em>(${dir}) </em>` : ''}${esc(text)}</div>`;
-  const roleBox = (label, key) => `<div><b>${label}</b><span contenteditable="true">${esc(g.roles[key])}</span></div>`;
+  const c = g.card, n = c.guest_name || 'Friend', sz = g.size;
+  const all = (c.card_lines || []).slice(1).map(tidy).filter(Boolean);          // Hello, I'm ~ 빼고
+  const exs = (c.extra || '').split('\n').map(x => tidy(x)).filter(Boolean);
+  let sym = all.filter(l => !exs.includes(l)), ext = all.filter(l => exs.includes(l));
+  if (!sym.length) { sym = all.slice(0, 1); ext = all.slice(1); }
+  const symT = sym.join(' '), extT = ext.join(' ') || "I don't feel well.";
+  const first = (c.symptoms || [])[0], act = first && SYM[first] ? SYM[first].act : '아픈 표정으로';
+  // 처방: [위로, 약, 조언, 더 할 말]
+  const rl = (g.reply && g.reply.lines && g.reply.lines.length ? g.reply.lines : null);
+  const r0 = rl && rl[0] ? tidy(rl[0]) : "That's too bad.";
+  const r1 = rl && rl[1] ? tidy(rl[1]) : 'Take this medicine.';
+  const rAdv = rl ? rl.slice(2).filter(Boolean).map(tidy).join(' ') : nurseLine(adviceFor(c.feel)).replace(/^That's too bad\.\s*Take this medicine\.\s*/, '');
+  const meds = (c.symptoms || []).filter(s => MEDS[s]);
+  const L = (role, text, dir) => `<div class="ln"><b>${role}</b>${dir ? `<em>(${dir}) </em>` : ''}${esc(text)}</div>`;
+  const box = label => `<div><b>${label}</b><span class="nameline">이름 · Name</span></div>`;
+  const S1 = [], S2 = [];
+  if (sz >= 4) {                                   // 담임 선생님이 있는 모둠
+    S1.push(L('Teacher', `${n}, are you okay?`), L('Patient', "No, I'm not. I'm sick.", act), L('Teacher', "What's wrong?"), L('Patient', symT));
+    S1.push(L('Teacher', "That's too bad. Go to the nurse's office."), L('Friend', `Let's go, ${n}.`));
+    S2.push(L('Friend', `Hello. ${n} is sick.`, '보건 선생님에게'), L('Nurse', `Hello, ${n}. Are you okay?`), L('Patient', extT),
+      L('Nurse', `${r0} ${r1}`, '칠판의 약 그림을 떼어 건네며'), L('Patient', 'Thank you.'));
+    if (rAdv) S2.push(L('Nurse', rAdv));
+    S2.push(L('Friend', `Get well soon, ${n}!`));
+  } else {                                         // 3명: 환자, 보건 선생님, 친구
+    S1.push(L('Friend', `Hi, ${n}. Are you okay?`), L('Patient', "No, I'm not. I'm sick.", act), L('Friend', "Oh, no! Let's go to the nurse's office."));
+    S2.push(L('Friend', `Hello. ${n} is sick.`, '보건 선생님에게'), L('Nurse', `Hello, ${n}. What's wrong?`), L('Patient', symT),
+      L('Nurse', r0), L('Patient', extT), L('Nurse', r1, '칠판의 약 그림을 떼어 건네며'), L('Patient', 'Thank you.'));
+    if (rAdv) S2.push(L('Nurse', rAdv));
+    S2.push(L('Friend', `Get well soon, ${n}!`));
+  }
   return `<div class="scr">
-    <h2>${esc(name)}'s Sick Day</h2>
-    <div class="meta">${TCLS}반 · ${i + 1}모둠 (${g.size}인) · 문진표 ${c.student_no}번${g.reply ? ` · 답장 ${g.reply.reply_no}번` : ''} · 준비물: 휴지, 약 봉투(${esc(meds)}), 체온계</div>
-    <div class="roles">${roleBox('Patient (' + esc(name) + ')', 'patient')}${roleBox('Friend (친구)', 'friend')}${roleBox('Nurse (보건 선생님)', 'nurse')}${G4 ? roleBox('Teacher (담임 선생님)', 'teacher') : ''}${g.size >= 5 ? roleBox('Friend 2 (친구 2)', 'friend2') : ''}</div>
-    <div class="scene">Scene 1. Classroom · 교실</div>
-    ${G4 ? L('Teacher', 'Good morning, everyone!') : ''}
-    ${L('Friend', `Hi, ${name}. Are you okay?`)}
-    ${L('Patient', "No, I'm not. I'm sick.", act)}
-    ${L('Friend', "What's wrong?")}
-    ${symLines.map(l => L('Patient', l)).join('')}
-    ${L('Friend', "That's too bad.")}
-    ${g.size >= 5 ? L('Friend 2', "Oh, no! That's too bad.") : ''}
-    ${G4 ? L('Teacher', `${name}, let's go to the nurse's office.`) : L('Friend', "Let's go to the nurse's office.")}
-    <div class="scene">Scene 2. Nurse's Office · 보건실</div>
-    ${G4 ? L('Teacher', `${name} is sick.`, '보건 선생님에게') : L('Friend', `${name} is sick.`, '보건 선생님에게')}
-    ${L('Nurse', `Hello, ${name}. What's wrong?`)}
-    ${lines.map((l, k) => L('Patient', l, k === 0 ? act : (feelAct && /tired|thirsty/i.test(l) ? feelAct : ''))).join('')}
-    ${L('Nurse', reply, '약 봉투를 건네며')}
-    ${L('Patient', 'Okay. Thank you.')}
-    ${L('Nurse', "You're welcome.")}
-    <div class="scene">Scene 3. The Next Day · 다음 날</div>
-    ${L('Friend', `${name}, are you okay now?`)}
-    ${L('Patient', "Yes! I'm okay now. Thank you.", '활짝 웃으며')}
-    ${G4 ? L('Teacher', "That's great!") : ''}
-    ${g.size >= 5 ? L('Friend 2', "Yay! Let's play together!") : ''}
-    <div class="gc"><b class="ko">Group Check</b><br>배운 표현을 활용하여 영어로 잘 표현했어요 <span class="eni">We used the expressions well.</span> ☆☆☆<br>서로 협력하고 창의적으로 표현했어요 <span class="eni">We worked together creatively.</span> ☆☆☆<br>존중하고 배려하는 자세로 발표를 들었어요 <span class="eni">We listened with respect.</span> ☆☆☆
-      <div class="muted" style="font-size:12px;margin-top:4px">Nurse's Office · Tr. Olivia</div></div>
+    <h2>${esc(n)}'s Sick Day <span class="meta" style="font-size:15px">${TCLS}반 ${i + 1}모둠 · ${sz}명</span></h2>
+    <div class="roles">${box('Patient · 환자 (' + esc(n) + ')')}${box('Nurse · 보건 선생님')}${box('Friend · 친구')}${sz >= 4 ? box('Teacher · 담임 선생님') : ''}</div>
+    <div class="scene">Scene 1. 교실 · Classroom</div>${S1.join('')}
+    <div class="scene">Scene 2. 보건실 · Nurse's Office</div>${S2.join('')}
+    <div class="medrow">💊 필요한 약 · Medicine: ${meds.map(s => `<b>${MEDS[s].name}</b>`).join(', ') || '-'}</div>
+    <div class="owner">📋 문진표: ${TCLS}반 ${c.student_no}번${g.reply ? ` · 💊 처방: ${g.reply.reply_no}번` : ''} 학생의 글로 만든 대본이에요.</div>
   </div>`;
+}
+function printWith(html, pageCss) {
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = html;
+  pa.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
+  let st = document.getElementById('printPage');
+  if (!st) { st = document.createElement('style'); st.id = 'printPage'; document.head.appendChild(st); }
+  st.textContent = `@media print{@page{${pageCss}}}`;
+  setTimeout(() => window.print(), 300);
 }
 function printScripts() {
   const src = document.getElementById('scripts'); if (!src) return;
-  const pa = document.getElementById('printArea');
-  pa.innerHTML = src.innerHTML;
-  pa.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
-  window.print();
+  const items = [...src.querySelectorAll('.scr')].map(e => e.outerHTML);
+  let html = '';
+  for (let k = 0; k < items.length; k += 2) html += `<div class="sheet2">${items[k]}${items[k + 1] || '<div></div>'}</div>`;
+  printWith(html, 'size:A4 landscape;margin:8mm');
+}
+function printMeds() {
+  const html = Object.keys(MEDS).map(k => `<div class="medcard"><img src="img/${MEDS[k].img}.png" alt=""><div class="mn">${MEDS[k].name}</div><div class="mk">${MEDS[k].ko}</div></div>`).join('');
+  printWith(html, 'size:A4 landscape;margin:10mm');
 }
 
 /* =========================================================
