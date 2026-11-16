@@ -469,33 +469,37 @@ th{white-space:nowrap;font-family:"Jua";font-weight:400;font-size:17px;color:var
 .scr-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px;color:#a05a5a}.scr-tools s{color:#999}
 .ln [contenteditable]:focus{outline:2px dashed var(--sun);background:#fffbe8}
 @media print{.noprint{display:none!important}}
-.csheet{display:grid;grid-template-columns:minmax(0,42fr) minmax(0,58fr);gap:12px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.csheet{display:grid;grid-template-columns:minmax(0,37fr) minmax(0,63fr);gap:12px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
 .csheet .ch{font-family:Jua;font-size:22px;color:var(--teal);border-bottom:2px solid var(--line);margin-bottom:8px}
 .csheet .ch span{font-size:15px;color:#5d807b;margin-left:6px}
 .cpat{display:flex;align-items:center;gap:10px}.cname{font-family:Nunito;font-weight:900;font-size:26px}
 .clines p{font-family:Nunito;font-weight:800;font-size:18px;margin:4px 0;line-height:1.4}
 .cguide{margin-top:10px;font-size:12.5px;color:#5d807b;border-top:1.5px dashed var(--line);padding-top:6px}
-.cbox{border:1.5px solid #cfe4df;border-radius:10px;padding:6px 10px;margin-bottom:6px}
-.cb-top{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}.cb-top b{font-family:Jua;color:var(--red);font-size:16px}
-.cb-top i,.cb-adv i,.cb-adv2 i{display:inline-block;border-bottom:1.5px solid #9ab;min-width:140px;height:18px}
-.cb-meds{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;margin:4px 0}.cb-meds img{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin:0 2px}
-.cb-adv{font-size:14px;display:flex;gap:6px;align-items:end}.cb-adv i{flex:1}.cb-adv2{display:flex;margin-top:6px}.cb-adv2 i{flex:1}
+.cbox{border:1.5px solid #cfe4df;border-radius:10px;margin-bottom:6px;display:grid;grid-template-columns:96px minmax(0,1fr);overflow:hidden}
+.cb-who{background:#f1faf8;border-right:1.5px solid #cfe4df;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px;text-align:center}
+.cb-no{font-family:Jua;color:var(--red);font-size:16px}.cb-lab{font-size:12px;line-height:1.2;margin:2px 0 4px}.cb-lab span{color:#5d807b}
+.cb-sign{width:86px;height:34px;border:1.5px dashed #9ab;border-radius:6px;background:#fff}
+.cb-body{padding:6px 10px}
+.cb-row{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:13px;margin:2px 0}.cb-row b{font-family:Jua;font-weight:400;color:var(--teal);margin-right:2px}
+.cb-row img{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin:0 2px}
+.cb-more{font-size:13px;display:flex;gap:6px;align-items:end;margin-top:4px}.cb-more b{font-family:Jua;font-weight:400;color:var(--teal)}.cb-more i{flex:1;border-bottom:1.5px solid #9ab;height:18px}
 @media print{
   .csheet{border:0;border-radius:0;margin:0;padding:0;height:190mm;page-break-after:always;break-after:page;gap:8mm;overflow:hidden}
   .cright{display:flex;flex-direction:column;height:190mm}
-  .cright .cbox{flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .cright .cbox{flex:1}
+  .cb-body{display:flex;flex-direction:column;justify-content:space-around}
   .csheet .ch{font-size:26px}
   .clines p{font-size:24px;margin:7px 0}
   .cname{font-size:32px}
   .cpat .pic{width:150px!important;height:150px!important}
   .cguide{font-size:14px}
-  .cb-top{font-size:16px}.cb-top b{font-size:19px}
-  .cb-meds{font-size:15px;gap:4px 14px}.cb-meds img{width:26px;height:26px}
-  .cb-adv{font-size:16px}
+  .cbox{grid-template-columns:30mm minmax(0,1fr)}
+  .cb-no{font-size:20px}.cb-lab{font-size:14px}.cb-sign{width:26mm;height:12mm}
+  .cb-row{font-size:14.5px;gap:3px 12px}.cb-row img{width:24px;height:24px}
+  .cb-more{font-size:14.5px}
   .csheet:last-child{page-break-after:auto;break-after:auto}
-  .cbox{padding:3mm 4mm;margin-bottom:3mm;box-sizing:border-box}
+  .cbox{margin-bottom:3mm;box-sizing:border-box}
   .cbox:last-child{margin-bottom:0}
-  .cb-adv2{margin-top:2mm}
 }
 .pt-how{font-size:22px;line-height:1.7;margin:0 auto;max-width:860px}.pt-how .eni{font-size:16px}
 .pt-title{font-size:46px;margin-top:10px}.pt-time{font-family:Nunito;font-weight:900;font-size:150px;line-height:1.1;color:var(--teal)}
@@ -2184,16 +2188,22 @@ function clinicCards(cards) {
 }
 function clinicSheet(c) {
   const lines = (c.card_lines || []).filter((l, k) => k === 0 || lineOK(l)).map(fixText);
-  const box = k => `<div class="cbox"><div class="cb-top"><b>진료 ${k}</b><span>보건 선생님 Nurse: <i></i></span></div>
-      <div class="cb-meds">💊 ${Object.keys(MEDS).map(m => `<span>☐ <img src="img/${MEDS[m].img}.png" alt="">${MEDS[m].name.replace(' Medicine', '')}</span>`).join('')}</div>
-      <div class="cb-adv">📝 <b>Advice</b> <i></i></div><div class="cb-adv2"><i></i></div></div>`;
+  const ADVS = ['Get some rest.', 'Get some sleep.', 'Drink warm water.', 'Wear a warm coat.', "Don't eat too much.", 'Take some vitamins.'];
+  const box = k => `<div class="cbox">
+      <div class="cb-who"><div class="cb-no">진료 ${k}</div><div class="cb-lab">🩺 보건 선생님<br><span>Nurse</span></div><div class="cb-sign"></div></div>
+      <div class="cb-body">
+        <div class="cb-row"><b>💊 약</b>${Object.keys(MEDS).map(m => `<span>☐ <img src="img/${MEDS[m].img}.png" alt="">${MEDS[m].name.replace(' Medicine', '')}</span>`).join('')}</div>
+        <div class="cb-row"><b>💬 조언</b>${ADVS.map(a => `<span>☐ ${esc(a)}</span>`).join('')}</div>
+        <div class="cb-more"><b>✍️ 더 하고 싶은 말</b> <span class="muted">(선택)</span> <i></i></div>
+      </div></div>`;
   return `<div class="csheet">
     <div class="cleft">
       <div class="ch">📋 Patient Form <span>문진표 · ${c.sample ? `샘플 ${c.sample} · Sample` : `${TCLS}반 ${c.student_no}번${(c.slot || 1) === 2 ? ' ②' : ''}`}</span></div>
       <div class="cpat">${pic(avImg(c.avatar, 'sick'), avEmoji(c.avatar), '', 'width:110px;height:110px;font-size:80px')}
         <div class="cname">${esc(c.guest_name || '')}</div></div>
       <div class="clines">${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>
-      <div class="cguide"><b>Nurse:</b> Hello. What's wrong? → <b>Patient:</b> (문진표 읽기) → <b>Nurse:</b> That's too bad. Take this medicine. + 조언 → <b>Patient:</b> Thank you.</div>
+      <div class="cguide"><b>Nurse:</b> Hello. What's wrong? → <b>Patient:</b> (문진표 읽기) → <b>Nurse:</b> That's too bad. Take this medicine. + 체크한 조언을 말해요 → <b>Patient:</b> Thank you.
+        <br>보건 선생님은 약과 조언에 체크하고, <b>왼쪽 칸에 자기 이름</b>을 써요.</div>
     </div>
     <div class="cright"><div class="ch">🩺 Nurse's Notes <span>진료 기록</span></div>${Array.from({ length: CLINIC_BOX }, (_, k) => box(k + 1)).join('')}</div>
   </div>`;
